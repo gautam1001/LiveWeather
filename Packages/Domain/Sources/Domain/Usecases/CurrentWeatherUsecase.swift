@@ -1,7 +1,7 @@
 
 import Foundation
 
-public struct CurrentWeatherUsecase {
+public struct CurrentWeatherUsecase: Sendable {
     
     private let repository: WeatherRepository
     

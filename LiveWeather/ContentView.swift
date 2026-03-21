@@ -6,8 +6,11 @@
 //
 
 import SwiftUI
+import Presentation
 
 struct ContentView: View {
+    private let viewModel: WeatherOverviewViewModel
+    
     var body: some View {
         VStack {
             Image(systemName: "globe")
@@ -19,6 +22,6 @@ struct ContentView: View {
     }
 }
 
-#Preview {
-    ContentView()
-}
+//#Preview {
+//    ContentView()
+//}
