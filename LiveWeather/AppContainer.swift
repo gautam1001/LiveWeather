@@ -6,14 +6,20 @@
 //
 
 import Foundation
+
+import Data
 import Domain
+import Presentation
 
 final class AppContainer {
     
-//    let repository: WeatherRepository
-//    
-//    init() {
-//
-//    }
+    private let repository: WeatherRepository
     
+    public init() {
+        self.repository = WeatherRemoteRepository()
+    }
+    
+    func makeWeatherViewModel() -> WeatherOverviewViewModel {
+        WeatherOverviewViewModel(usecase: CurrentWeatherUsecase(repository: self.repository))
+    }
 }
