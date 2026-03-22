@@ -24,9 +24,9 @@ public struct WeatherAPIConfig: Sendable {
         self.language = language
     }
 
-    public static func weatherAPIDefault(apiKey: String) -> WeatherAPIConfig {
+    public static func weatherAPIDefault(apiKey: String, apiUrl: String) -> WeatherAPIConfig {
         WeatherAPIConfig(
-            baseURL: URL(string: "https://api.weatherapi.com/v1/forecast.json")!,
+            baseURL: URL(string: apiUrl)!,
             apiKey: apiKey,
             days: 7,
             includeAlerts: true,
