@@ -9,7 +9,7 @@ public struct CurrentWeatherUsecase: Sendable {
         self.repository = repository
     }
     
-    public func callAsFunction(location: String) async throws -> WeatherNow {
+    public func callAsFunction(location: Location) async throws -> WeatherNow {
         try await self.repository.getCurrentWeather(for: location)
     }
 }

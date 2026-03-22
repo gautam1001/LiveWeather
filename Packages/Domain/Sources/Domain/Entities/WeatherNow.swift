@@ -6,6 +6,27 @@
 //
 
 import Foundation
+public struct Coordinate: Equatable, Hashable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+
+    public init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
+}
+
+public struct Location: Equatable, Hashable, Identifiable, Sendable {
+    public let id: UUID
+    public let name: String
+    public let coordinate: Coordinate
+
+    public init(id: UUID = UUID(), name: String, coordinate: Coordinate) {
+        self.id = id
+        self.name = name
+        self.coordinate = coordinate
+    }
+}
 
 public struct WeatherNow: Equatable, Sendable {
     public let temperatureC: Double

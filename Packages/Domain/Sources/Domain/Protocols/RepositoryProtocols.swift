@@ -8,5 +8,5 @@
 import Foundation
 
 public protocol WeatherRepository: Sendable {
-    func getCurrentWeather(for location: String) async throws -> WeatherNow
+    func getCurrentWeather(for location: Location) async throws -> WeatherNow
 }

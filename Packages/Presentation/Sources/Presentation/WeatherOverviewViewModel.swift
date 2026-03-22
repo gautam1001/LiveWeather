@@ -16,8 +16,12 @@ public final class WeatherOverviewViewModel: ObservableObject {
     public func load(for location: String) async {
         self.state = .loading
         do {
+            let location = Location(
+                name: location,
+                coordinate: Coordinate(latitude: 28.670185, longitude: 77.444550)
+            )
             let current = try await useCase(location: location)
-            let overview = WeatherOverview(locationName: location, current: current)
+            let overview = WeatherOverview(locationName: location.name, current: current)
             self.state = .loaded(overview)
         } catch {
             self.state = .failed(error.localizedDescription)

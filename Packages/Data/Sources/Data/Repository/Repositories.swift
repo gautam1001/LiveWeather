@@ -2,9 +2,21 @@ import Foundation
 import Domain
 
 public final class WeatherRemoteRepository: WeatherRepository {
-   public init() {}
-   public func getCurrentWeather(for location: String) async throws -> WeatherNow {
-        return WeatherNow(temperatureC: 0.0, conditionCode: 1, conditionSummary: "Rainy Day", conditionDescription: "Clear to partly cloudy; air quality will be very unhealthy")
+    
+    private let dataSource: WeatherRemoteDataSource
+    private let mapper: WeatherAPIMapper
+    
+    public init(dataSource: WeatherRemoteDataSource,
+                mapper: WeatherAPIMapper = WeatherAPIMapper()) {
+        self.dataSource = dataSource
+        self.mapper = mapper
+    }
+    
+   public func getCurrentWeather(for location: Location) async throws -> WeatherNow {
+      
+       let dto = try await dataSource.fetchWeather(for: location)
+       let weather = try mapper.mapCurrent(dto)
+       return weather
     }
     
 }
