@@ -16,9 +16,8 @@ final class AppContainer {
     private let repository: WeatherRepository
     
     public init() {
-        
-        let url = URL(string: "https://api.weatherapi.com/v1/forecast.json")!
-        let config = WeatherAPIConfig(baseURL: url, apiKey: "7f3853a85ef941f2bed71713240110")
+        let apikey = AppConfig.weatherAPIKey
+        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apikey)
         let client = URLSessionHTTPClient(session: URLSession.shared)
         let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
         self.repository = WeatherRemoteRepository(dataSource: dataSource)
