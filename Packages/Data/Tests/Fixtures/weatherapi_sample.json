@@ -1,0 +1,47 @@
+{
+  "current": {
+    "temp_c": 28.5,
+    "condition": {
+      "text": "Clear",
+      "code": 1000
+    }
+  },
+  "forecast": {
+    "forecastday": [
+      {
+        "date": "2023-11-14",
+        "day": {
+          "mintemp_c": 20.1,
+          "maxtemp_c": 30.2,
+          "condition": {
+            "text": "Light rain",
+            "code": 1183
+          }
+        }
+      },
+      {
+        "date": "2023-11-15",
+        "day": {
+          "mintemp_c": 21.0,
+          "maxtemp_c": 32.0,
+          "condition": {
+            "text": "Partly cloudy",
+            "code": 1003
+          }
+        }
+      }
+    ]
+  },
+  "alerts": {
+    "alert": [
+      {
+        "headline": "Heat Warning",
+        "event": "Heat Warning",
+        "severity": "Severe",
+        "effective": "2023-11-14T10:00:00+00:00",
+        "expires": "2023-11-14T18:00:00+00:00",
+        "desc": "High temperatures expected"
+      }
+    ]
+  }
+}
