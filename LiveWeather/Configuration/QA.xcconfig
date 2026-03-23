@@ -5,5 +5,4 @@ SWIFT_ACTIVE_COMPILATION_CONDITIONS = QA
 
 // Product
 PRODUCT_BUNDLE_IDENTIFIER = com.prashant.liveweather.qa
-PRODUCT_NAME = LiveWeather QA
-TARGET_NAME = LiveWeather QA
+INFOPLIST_KEY_CFBundleDisplayName = LiveWeather QA

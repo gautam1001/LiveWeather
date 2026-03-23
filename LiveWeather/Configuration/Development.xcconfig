@@ -4,5 +4,4 @@ SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEV
 
 // Product
 PRODUCT_BUNDLE_IDENTIFIER = com.prashant.liveweather.dev
-PRODUCT_NAME = LiveWeather Dev
-TARGET_NAME = LiveWeather Dev
+INFOPLIST_KEY_CFBundleDisplayName = LiveWeather Dev
