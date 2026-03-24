@@ -11,11 +11,26 @@ import Data
 import Domain
 import Presentation
 
+@MainActor
 final class AppContainer {
-    
+
+    typealias WeatherRepositoryFactory = (_ apiKey: String, _ apiURL: String) -> WeatherRepository
+
     private let repository: WeatherRepository
-    
-    public init() {
+
+    public convenience init(repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory) {
+        self.init(
+            weatherAPIKey: AppConfig.weatherAPIKey,
+            weatherAPIURL: AppConfig.weatherAPIUrl,
+            repositoryFactory: repositoryFactory
+        )
+    }
+
+    public init(
+        weatherAPIKey: String,
+        weatherAPIURL: String,
+        repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory
+    ) {
         #if DEV
         print("DEV")
         #elseif QA
@@ -23,15 +38,17 @@ final class AppContainer {
         #elseif PROD
         print("PRODUCTION")
         #endif
-        let apikey = AppConfig.weatherAPIKey
-        let apiUrl = AppConfig.weatherAPIUrl
-        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apikey, apiUrl: apiUrl)
-        let client = URLSessionHTTPClient(session: URLSession.shared)
-        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
-        self.repository = WeatherRemoteRepository(dataSource: dataSource)
+        self.repository = repositoryFactory(weatherAPIKey, weatherAPIURL)
     }
-    
+
     func makeWeatherViewModel() -> WeatherOverviewViewModel {
         WeatherOverviewViewModel(usecase: CurrentWeatherUsecase(repository: self.repository))
+    }
+
+    nonisolated private static func liveRepositoryFactory(apiKey: String, apiURL: String) -> WeatherRepository {
+        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apiKey, apiUrl: apiURL)
+        let client = URLSessionHTTPClient(session: URLSession.shared)
+        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        return WeatherRemoteRepository(dataSource: dataSource)
     }
 }
