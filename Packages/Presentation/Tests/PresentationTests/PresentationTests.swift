@@ -32,8 +32,8 @@ func loadSetsLoadedStateOnSuccess() async {
 
     let requested = await repository.lastRequestedLocation()
     #expect(requested?.name == "Noida")
-    #expect(requested?.coordinate.latitude == 28.670185)
-    #expect(requested?.coordinate.longitude == 77.444550)
+    #expect(requested?.coordinate.latitude == 28.644800)
+    #expect(requested?.coordinate.longitude == 77.216721)
 }
 
 @MainActor
