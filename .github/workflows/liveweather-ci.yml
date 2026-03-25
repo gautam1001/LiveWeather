@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   app-tests:
-    if: startsWith(github.head_ref, 'feature/')
+    #if: startsWith(github.head_ref, 'feature/')
     name: App Unit Tests
     runs-on: macos-26
     timeout-minutes: 30
@@ -40,7 +40,7 @@ jobs:
             -only-testing:LiveWeatherTests
 
   package-tests:
-    if: startsWith(github.head_ref, 'feature/')
+    #if: startsWith(github.head_ref, 'feature/')
     name: Package Tests
     runs-on: macos-26
     steps:
