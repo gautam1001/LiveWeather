@@ -43,7 +43,7 @@ struct ContentView: View {
         case .loaded(let overview):
             
             HStack {
-                Text(overview.current.conditionSummary)
+                Text("Condition: \(overview.current.conditionSummary)")
                 Spacer()
                 Text("\(overview.current.temperatureC, specifier: "%.1f")°C")
             }.padding()
