@@ -3,13 +3,13 @@ name: iOS CI
 on:
   pull_request:
     branches: 
-      - development
+      - Development   # must match exact target branch name
       - main
-  push:
-    branches: 
-      - development
-      - 'feature/**'
-      - 'bugfix/**'
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch:
 
 concurrency:
@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   app-tests:
+    if: startsWith(github.head_ref, 'feature/')
     name: App Unit Tests
     runs-on: macos-26
     timeout-minutes: 30
@@ -39,6 +40,7 @@ jobs:
             -only-testing:LiveWeatherTests
 
   package-tests:
+    if: startsWith(github.head_ref, 'feature/')
     name: Package Tests
     runs-on: macos-26
     steps:

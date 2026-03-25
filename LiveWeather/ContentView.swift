@@ -20,9 +20,9 @@ struct ContentView: View {
     var body: some View {
         NavigationView {
             content
-                .navigationTitle("Ghaziabad")
+                .navigationTitle("New Delhi")
                 .task {
-                    await viewModel.load(for: "Ghaziabad")
+                    await viewModel.load(for: "New Delhi")
                 }
         }
     }

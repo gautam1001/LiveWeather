@@ -18,7 +18,7 @@ public final class WeatherOverviewViewModel: ObservableObject {
         do {
             let location = Location(
                 name: location,
-                coordinate: Coordinate(latitude: 28.670185, longitude: 77.444550)
+                coordinate: Coordinate(latitude: 28.644800, longitude: 77.216721)
             )
             let current = try await useCase(location: location)
             let overview = WeatherOverview(locationName: location.name, current: current)
