@@ -7,7 +7,10 @@ import PackageDescription
 
 let package = Package(
     name: "Data",
-    platforms: [.iOS(.v15)],
+    platforms: [
+        .iOS(.v15),
+        .macOS(.v12)
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
@@ -23,11 +26,23 @@ let package = Package(
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
             name: "Data",
-            dependencies: ["Domain"]
+            dependencies: [
+                .product(name: "Domain", package: "Domain"),
+            ]
         ),
         .testTarget(
             name: "DataTests",
-            dependencies: ["Data"]
+            dependencies: [
+                "Data",
+                .product(name: "Domain", package: "Domain")
+            ],
+            path: "Tests",
+            sources: [
+                "DataTests"
+            ],
+            resources: [
+                .process("Fixtures")
+            ]
         ),
     ]
 )

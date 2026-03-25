@@ -5,7 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "Presentation",
-    platforms: [.iOS(.v15)],
+    platforms: [
+        .iOS(.v15),
+        .macOS(.v12)
+    ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
@@ -25,7 +28,10 @@ let package = Package(
         ),
         .testTarget(
             name: "PresentationTests",
-            dependencies: ["Presentation"]
+            dependencies: [
+                "Presentation",
+                .product(name: "Domain", package: "Domain")
+            ]
         ),
     ]
 )

@@ -1,0 +1,9 @@
+#include "Secrets.xcconfig"
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = PROD
+
+
+// Product
+PRODUCT_BUNDLE_IDENTIFIER = com.prashant.liveweather
+INFOPLIST_KEY_CFBundleDisplayName = LiveWeather
+

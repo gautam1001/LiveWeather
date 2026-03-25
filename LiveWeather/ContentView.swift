@@ -6,19 +6,52 @@
 //
 
 import SwiftUI
+import Presentation
+import Domain
 
 struct ContentView: View {
+    
+    @StateObject private var viewModel: WeatherOverviewViewModel
+    
+    init(viewModel: WeatherOverviewViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationView {
+            content
+                .navigationTitle("New Delhi")
+                .task {
+                    await viewModel.load(for: "New Delhi")
+                }
         }
-        .padding()
+    }
+    // Custom view
+    @ViewBuilder
+    private var content: some View {
+        switch viewModel.state {
+        case .idle, .loading:
+            ProgressView("Loading weather...")
+        case .failed(let message):
+            VStack(spacing: 12) {
+                Text("Failed to load")
+                    .font(.headline)
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+        case .loaded(let overview):
+            
+            HStack {
+                Text(overview.current.conditionSummary)
+                Spacer()
+                Text("\(overview.current.temperatureC, specifier: "%.1f")°C")
+            }.padding()
+            
+        }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView(viewModel: AppContainer().makeWeatherViewModel())
 }

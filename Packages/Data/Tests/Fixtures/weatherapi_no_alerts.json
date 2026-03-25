@@ -1,0 +1,24 @@
+{
+  "current": {
+    "temp_c": 27.0,
+    "condition": {
+      "text": "Cloudy",
+      "code": 1006
+    }
+  },
+  "forecast": {
+    "forecastday": [
+      {
+        "date": "2023-11-14",
+        "day": {
+          "mintemp_c": 19.0,
+          "maxtemp_c": 29.0,
+          "condition": {
+            "text": "Cloudy",
+            "code": 1006
+          }
+        }
+      }
+    ]
+  }
+}

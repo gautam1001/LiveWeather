@@ -1,0 +1,51 @@
+name: iOS CI
+
+on:
+  pull_request:
+    branches: 
+      - Development   # must match exact target branch name
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+  workflow_dispatch:
+
+concurrency:
+  group: ios-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app-tests:
+    if: startsWith(github.head_ref, 'feature/')
+    name: App Unit Tests
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Xcode Version
+        run: xcodebuild -version
+
+      - name: Resolve Swift Packages
+        run: xcodebuild -resolvePackageDependencies -project LiveWeather.xcodeproj -scheme LiveWeather
+
+      - name: Run LiveWeatherTests
+        run: |
+          xcodebuild test \
+            -project LiveWeather.xcodeproj \
+            -scheme LiveWeather \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:LiveWeatherTests
+
+  package-tests:
+    if: startsWith(github.head_ref, 'feature/')
+    name: Package Tests
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - run: swift test --package-path Packages/Domain
+      - run: swift test --package-path Packages/Data
+      - run: swift test --package-path Packages/Presentation
+
