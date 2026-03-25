@@ -3,11 +3,12 @@ name: iOS CI
 on:
   pull_request:
     branches: 
-      - development
+      - Development   # must match exact target branch name
       - main
     types:
       - opened
       - reopened
+      - synchronize
       - ready_for_review
   workflow_dispatch:
 
