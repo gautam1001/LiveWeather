@@ -5,7 +5,7 @@ on:
     branches: 
       - development
       - main
-  types:
+    types:
       - opened
       - reopened
       - ready_for_review
