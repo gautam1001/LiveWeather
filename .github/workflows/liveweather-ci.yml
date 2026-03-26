@@ -33,7 +33,7 @@ jobs:
           brew install swiftlint swiftformat
           python3 -m venv .venv
           ./.venv/bin/python -m pip install --upgrade pip
-          ./.venv/bin/pip install semgr
+          ./.venv/bin/pip install semgrep
 
       - name: Prepare quality reports folder
         run: mkdir -p QualityReports
