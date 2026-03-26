@@ -77,6 +77,18 @@ jobs:
           name: code-quality-${{ github.run_number }}
           path: QualityReports
           retention-days: 7
+      - name: Print quality failures
+        if: always()
+        run: |
+          if [ "${{ steps.swiftlint.outcome }}" != "success" ]; then
+            echo "===== SwiftLint failures ====="
+            tail -n 200 QualityReports/swiftlint.log || true
+          fi
+
+          if [ "${{ steps.swiftformat.outcome }}" != "success" ]; then
+            echo "===== SwiftFormat failures ====="
+            tail -n 200 QualityReports/swiftformat.log || true
+          fi
 
       - name: Fail if any quality check failed
         if: always()
