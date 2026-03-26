@@ -5,18 +5,17 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
-import SwiftUI
-import Presentation
 import Domain
+import Presentation
+import SwiftUI
 
 struct ContentView: View {
-    
     @StateObject private var viewModel: WeatherOverviewViewModel
-    
+
     init(viewModel: WeatherOverviewViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
-    
+
     var body: some View {
         NavigationView {
             content
@@ -26,13 +25,14 @@ struct ContentView: View {
                 }
         }
     }
-    // Custom view
+
+    /// Custom view
     @ViewBuilder
     private var content: some View {
         switch viewModel.state {
         case .idle, .loading:
             ProgressView("Loading weather...")
-        case .failed(let message):
+        case let .failed(message):
             VStack(spacing: 12) {
                 Text("Failed to load")
                     .font(.headline)
@@ -40,14 +40,12 @@ struct ContentView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-        case .loaded(let overview):
-            
+        case let .loaded(overview):
             HStack {
                 Text(overview.current.conditionSummary)
                 Spacer()
                 Text("\(overview.current.temperatureC, specifier: "%.1f")°C")
             }.padding()
-            
         }
     }
 }

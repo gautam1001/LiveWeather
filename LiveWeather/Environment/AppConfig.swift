@@ -11,13 +11,13 @@ enum AppConfig {
     static var weatherAPIKey: String {
         ConfigProvider.shared.value(for: .weatherApiKey)
     }
+
     static var weatherAPIUrl: String {
         ConfigProvider.shared.value(for: .weatherApiUrl)
     }
 }
 
 final class ConfigProvider {
-
     static let shared = ConfigProvider()
 
     private let dictionary: [String: Any]
@@ -35,7 +35,6 @@ final class ConfigProvider {
 }
 
 enum ConfigKeys: String {
-    
     case weatherApiUrl = "WeatherApiUrl"
     case weatherApiKey = "WeatherApiKey"
     case appName = "CFBundleName"

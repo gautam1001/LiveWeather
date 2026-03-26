@@ -1,5 +1,5 @@
 //
-//  WeatherData.swift
+//  ForecastResponseDTO.swift
 //  Data
 //
 //  Created by Prashant Gautam on 21/03/26.
@@ -12,8 +12,13 @@ public struct ForecastResponseDTO: Decodable, Sendable {
 }
 
 public struct CurrentDTO: Decodable, Sendable {
-    public let temp_c: Double
+    public let tempC: Double
     public let condition: ConditionDTO
+
+    private enum CodingKeys: String, CodingKey {
+        case tempC = "temp_c"
+        case condition
+    }
 }
 
 public struct ConditionDTO: Decodable, Sendable {

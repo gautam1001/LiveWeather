@@ -1,9 +1,8 @@
-import XCTest
 @testable import Data
 @testable import Domain
+import XCTest
 
 final class WeatherRemoteRepositoryTests: XCTestCase {
-    
     func testCurrentWeatherFetchRemoteSuccess() async throws {
         let weatherData = try FixtureLoader.loadData(named: "weatherapi_sample")
         let dto = try JSONDecoder().decode(ForecastResponseDTO.self, from: weatherData)
@@ -20,7 +19,8 @@ final actor MockWeatherAPIDataSource: WeatherRemoteDataSource {
     init(dto: ForecastResponseDTO) {
         self.dto = dto
     }
-    func fetchWeather(for location: Location) async throws -> ForecastResponseDTO {
-        self.dto
+
+    func fetchWeather(for _: Location) async throws -> ForecastResponseDTO {
+        dto
     }
 }

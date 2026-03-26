@@ -1,7 +1,7 @@
-import Foundation
-import Testing
 import Domain
+import Foundation
 @testable import Presentation
+import Testing
 
 @MainActor
 @Test("WeatherOverviewViewModel starts in idle state")
@@ -23,7 +23,7 @@ func loadSetsLoadedStateOnSuccess() async {
     await viewModel.load(for: "Noida")
 
     switch viewModel.state {
-    case .loaded(let overview):
+    case let .loaded(overview):
         #expect(overview.locationName == "Noida")
         #expect(overview.current == sampleWeather)
     default:
@@ -46,7 +46,7 @@ func loadSetsFailedStateOnError() async {
     await viewModel.load(for: "Pune")
 
     switch viewModel.state {
-    case .failed(let message):
+    case let .failed(message):
         #expect(message == TestError.upstream.localizedDescription)
     default:
         Issue.record("Expected failed state after repository error")
@@ -87,7 +87,7 @@ private enum TestError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .upstream:
-            return "Unable to fetch weather data"
+            "Unable to fetch weather data"
         }
     }
 }
