@@ -31,8 +31,9 @@ jobs:
       - name: Install code quality tools
         run: |
           brew install swiftlint swiftformat
-          python3 -m pip install --upgrade pip
-          python3 -m pip install semgrep
+          python3 -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/pip install semgr
 
       - name: Prepare quality reports folder
         run: mkdir -p QualityReports
@@ -58,15 +59,16 @@ jobs:
         continue-on-error: true
         run: |
           set -o pipefail
-          python3 -m semgrep --version | tee QualityReports/semgrep-version.txt
-          python3 -m semgrep scan \
-            --config p/swift \
-            --error \
-            --json \
-            --output QualityReports/semgrep.json \
-            --exclude .build \
-            --exclude DerivedData \
-            . 2>&1 | tee QualityReports/semgrep.log
+          ./.venv/bin/semgrep --version | tee QualityReports/semgrep-version.txt
+          ./.venv/bin/semgrep scan \
+          --config p/swift \
+          --error \
+          --json \
+          --output QualityReports/semgrep.json \
+          --exclude .build \
+          --exclude DerivedData \
+          --exclude .venv \
+          . 2>&1 | tee QualityReports/semgrep.log
 
       - name: Upload code quality artifacts
         if: always()
