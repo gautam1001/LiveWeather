@@ -1,12 +1,12 @@
 //
-//  File.swift
+//  WeatherRemoteDataSource.swift
 //  Data
 //
 //  Created by Prashant Gautam on 22/03/26.
 //
 
-import Foundation
 import Domain
+import Foundation
 
 public protocol WeatherRemoteDataSource: Sendable {
     func fetchWeather(for location: Location) async throws -> ForecastResponseDTO
@@ -24,7 +24,7 @@ public struct WeatherAPIRemoteDataSource: WeatherRemoteDataSource {
     public func fetchWeather(for location: Location) async throws -> ForecastResponseDTO {
         let url = try buildURL(for: location.coordinate)
         let (data, response) = try await client.get(url: url)
-        guard (200...299).contains(response.statusCode) else {
+        guard (200 ... 299).contains(response.statusCode) else {
             throw WeatherAPIError.httpStatus(response.statusCode)
         }
         do {

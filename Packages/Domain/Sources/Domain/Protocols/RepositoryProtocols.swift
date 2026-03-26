@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  RepositoryProtocols.swift
 //  Domain
 //
 //  Created by Prashant Gautam on 21/03/26.

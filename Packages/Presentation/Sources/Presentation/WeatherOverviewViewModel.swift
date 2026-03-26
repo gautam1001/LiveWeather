@@ -1,20 +1,19 @@
 import Combine
-import Foundation
 import Domain
+import Foundation
 
 public final class WeatherOverviewViewModel: ObservableObject {
-    
     @Published public private(set) var state: State = .idle
-    
+
     private let useCase: CurrentWeatherUsecase
-    
+
     public init(usecase: CurrentWeatherUsecase) {
-        self.useCase = usecase
+        useCase = usecase
     }
-    
+
     @MainActor
     public func load(for location: String) async {
-        self.state = .loading
+        state = .loading
         do {
             let location = Location(
                 name: location,
@@ -22,15 +21,14 @@ public final class WeatherOverviewViewModel: ObservableObject {
             )
             let current = try await useCase(location: location)
             let overview = WeatherOverview(locationName: location.name, current: current)
-            self.state = .loaded(overview)
+            state = .loaded(overview)
         } catch {
-            self.state = .failed(error.localizedDescription)
+            state = .failed(error.localizedDescription)
         }
     }
 }
 
 public extension WeatherOverviewViewModel {
-    
     enum State: Equatable {
         case idle
         case loading

@@ -14,7 +14,7 @@ let package = Package(
         .library(
             name: "Presentation",
             targets: ["Presentation"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../Domain")
@@ -32,6 +32,6 @@ let package = Package(
                 "Presentation",
                 .product(name: "Domain", package: "Domain")
             ]
-        ),
+        )
     ]
 )

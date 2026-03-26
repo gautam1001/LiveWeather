@@ -1,5 +1,5 @@
 //
-//  WeatherData.swift
+//  ForecastResponseDTO.swift
 //  Data
 //
 //  Created by Prashant Gautam on 21/03/26.

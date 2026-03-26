@@ -1,6 +1,6 @@
 import Foundation
 
-struct FixtureLoader {
+enum FixtureLoader {
     static func loadData(named name: String, fileExtension: String = "json") throws -> Data {
         guard let url = Bundle.module.url(forResource: name, withExtension: fileExtension) else {
             throw FixtureError.notFound(name)
@@ -14,7 +14,7 @@ enum FixtureError: Error, CustomStringConvertible {
 
     var description: String {
         switch self {
-        case .notFound(let name):
+        case let .notFound(name):
             return "Fixture not found: \(name)"
         }
     }

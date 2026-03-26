@@ -1,11 +1,12 @@
 //
-//  File.swift
+//  WeatherNow.swift
 //  Domain
 //
 //  Created by Prashant Gautam on 21/03/26.
 //
 
 import Foundation
+
 public struct Coordinate: Equatable, Hashable, Sendable {
     public let latitude: Double
     public let longitude: Double

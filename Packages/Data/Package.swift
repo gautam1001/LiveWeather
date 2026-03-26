@@ -16,7 +16,7 @@ let package = Package(
         .library(
             name: "Data",
             targets: ["Data"]
-        ),
+        )
     ],
     dependencies: [
         .package(path: "../Domain")
@@ -27,7 +27,7 @@ let package = Package(
         .target(
             name: "Data",
             dependencies: [
-                .product(name: "Domain", package: "Domain"),
+                .product(name: "Domain", package: "Domain")
             ]
         ),
         .testTarget(
@@ -43,6 +43,6 @@ let package = Package(
             resources: [
                 .process("Fixtures")
             ]
-        ),
+        )
     ]
 )

@@ -5,13 +5,12 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
-import XCTest
-import Presentation
 import Domain
 @testable import LiveWeather
+import Presentation
+import XCTest
 
 final class LiveWeatherTests: XCTestCase {
-
     func testConfigKeysRawValuesMatchExpectedInfoPlistKeys() {
         XCTAssertEqual(ConfigKeys.weatherApiUrl.rawValue, "WeatherApiUrl")
         XCTAssertEqual(ConfigKeys.weatherApiKey.rawValue, "WeatherApiKey")
@@ -85,7 +84,7 @@ final class LiveWeatherTests: XCTestCase {
 
         await viewModel.load(for: "Ghaziabad")
 
-        guard case .loaded(let overview) = viewModel.state else {
+        guard case let .loaded(overview) = viewModel.state else {
             return XCTFail("Expected .loaded state")
         }
 
@@ -108,7 +107,7 @@ final class LiveWeatherTests: XCTestCase {
 
         await viewModel.load(for: "Ghaziabad")
 
-        guard case .failed(let message) = viewModel.state else {
+        guard case let .failed(message) = viewModel.state else {
             return XCTFail("Expected .failed state")
         }
 
@@ -117,7 +116,6 @@ final class LiveWeatherTests: XCTestCase {
         XCTAssertEqual(requested.count, 1)
         XCTAssertEqual(requested.first?.name, "Ghaziabad")
     }
-
 }
 
 private let sampleWeather = WeatherNow(
