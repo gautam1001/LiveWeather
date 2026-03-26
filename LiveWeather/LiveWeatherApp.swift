@@ -9,12 +9,11 @@ import SwiftUI
 
 @main
 struct LiveWeatherApp: App {
-    
     private let container = AppContainer()
-    
+
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: self.container.makeWeatherViewModel())
+            ContentView(viewModel: container.makeWeatherViewModel())
         }
     }
 }

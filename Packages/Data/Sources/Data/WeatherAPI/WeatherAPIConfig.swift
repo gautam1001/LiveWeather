@@ -35,4 +35,3 @@ public struct WeatherAPIConfig: Sendable {
         )
     }
 }
-

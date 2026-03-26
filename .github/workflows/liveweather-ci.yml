@@ -20,6 +20,94 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  code-quality:
+    name: Code Quality (SwiftLint + SwiftFormat + Semgrep)
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install code quality tools
+        run: |
+          brew install swiftlint swiftformat
+          python3 -m venv .venv
+          ./.venv/bin/python -m pip install --upgrade pip
+          ./.venv/bin/pip install semgrep
+
+      - name: Prepare quality reports folder
+        run: mkdir -p QualityReports
+
+      - name: Run SwiftLint
+        id: swiftlint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          swiftlint --version | tee QualityReports/swiftlint-version.txt
+          swiftlint lint --strict --reporter github-actions-logging 2>&1 | tee QualityReports/swiftlint.log
+
+      - name: Run SwiftFormat (lint mode)
+        id: swiftformat
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          swiftformat --version | tee QualityReports/swiftformat-version.txt
+          swiftformat . --lint --reporter github-actions-log 2>&1 | tee QualityReports/swiftformat.log
+
+      - name: Run Semgrep
+        id: semgrep
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          ./.venv/bin/semgrep --version | tee QualityReports/semgrep-version.txt
+          ./.venv/bin/semgrep scan \
+          --config p/swift \
+          --error \
+          --json \
+          --output QualityReports/semgrep.json \
+          --exclude .build \
+          --exclude DerivedData \
+          --exclude .venv \
+          . 2>&1 | tee QualityReports/semgrep.log
+
+      - name: Upload code quality artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-${{ github.run_number }}
+          path: QualityReports
+          retention-days: 7
+      
+      - name: Print quality failures
+        if: always()
+        run: |
+          if [ "${{ steps.swiftlint.outcome }}" != "success" ]; then
+            echo "===== SwiftLint failures ====="
+            tail -n 200 QualityReports/swiftlint.log || true
+          fi
+
+          if [ "${{ steps.swiftformat.outcome }}" != "success" ]; then
+            echo "===== SwiftFormat failures ====="
+            tail -n 200 QualityReports/swiftformat.log || true
+          fi
+
+      - name: Fail if any quality check failed
+        if: always()
+        run: |
+          echo "swiftlint=${{ steps.swiftlint.outcome }}"
+          echo "swiftformat=${{ steps.swiftformat.outcome }}"
+          echo "semgrep=${{ steps.semgrep.outcome }}"
+
+          [ "${{ steps.swiftlint.outcome }}" = "success" ] || echo "::error::SwiftLint failed"
+          [ "${{ steps.swiftformat.outcome }}" = "success" ] || echo "::error::SwiftFormat failed"
+          [ "${{ steps.semgrep.outcome }}" = "success" ] || echo "::error::Semgrep failed"
+
+          if [ "${{ steps.swiftlint.outcome }}" != "success" ] || \
+             [ "${{ steps.swiftformat.outcome }}" != "success" ] || \
+             [ "${{ steps.semgrep.outcome }}" != "success" ]; then
+            exit 1
+          fi
+
   app-tests:
     name: App Unit Tests
     runs-on: macos-26

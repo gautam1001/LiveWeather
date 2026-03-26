@@ -1,0 +1,19 @@
+included:
+  - LiveWeather
+  - LiveWeatherTests
+  - Packages
+
+excluded:
+  - .build
+  - "**/.build/**"
+  - DerivedData
+  - "**/DerivedData/**"
+  - "**/.swiftpm/**"
+  - "**/xcuserdata/**"
+  - "**/SourcePackages/**"
+  - "**/resource_bundle_accessor.swift"
+  - LiveWeatherUITests
+
+disabled_rules:
+  - trailing_comma
+

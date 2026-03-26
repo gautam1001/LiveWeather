@@ -1,6 +1,6 @@
+@testable import Domain
 import Foundation
 import Testing
-@testable import Domain
 
 @Test("CurrentWeatherUsecase returns weather on repository success")
 func currentWeatherUsecaseReturnsResult() async throws {

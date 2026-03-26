@@ -9,7 +9,7 @@ let package = Package(
     name: "Data",
     platforms: [
         .iOS(.v15),
-        .macOS(.v12)
+        .macOS(.v12),
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -19,7 +19,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(path: "../Domain")
+        .package(path: "../Domain"),
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -34,14 +34,14 @@ let package = Package(
             name: "DataTests",
             dependencies: [
                 "Data",
-                .product(name: "Domain", package: "Domain")
+                .product(name: "Domain", package: "Domain"),
             ],
             path: "Tests",
             sources: [
-                "DataTests"
+                "DataTests",
             ],
             resources: [
-                .process("Fixtures")
+                .process("Fixtures"),
             ]
         ),
     ]
