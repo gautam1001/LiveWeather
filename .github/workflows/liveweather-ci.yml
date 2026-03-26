@@ -79,10 +79,21 @@ jobs:
           retention-days: 7
 
       - name: Fail if any quality check failed
-        if: steps.swiftlint.outcome == 'failure' || steps.swiftformat.outcome == 'failure' || steps.semgrep.outcome == 'failure'
+        if: always()
         run: |
-          echo "One or more code quality checks failed."
-          exit 1
+          echo "swiftlint=${{ steps.swiftlint.outcome }}"
+          echo "swiftformat=${{ steps.swiftformat.outcome }}"
+          echo "semgrep=${{ steps.semgrep.outcome }}"
+
+          [ "${{ steps.swiftlint.outcome }}" = "success" ] || echo "::error::SwiftLint failed"
+          [ "${{ steps.swiftformat.outcome }}" = "success" ] || echo "::error::SwiftFormat failed"
+          [ "${{ steps.semgrep.outcome }}" = "success" ] || echo "::error::Semgrep failed"
+
+          if [ "${{ steps.swiftlint.outcome }}" != "success" ] || \
+             [ "${{ steps.swiftformat.outcome }}" != "success" ] || \
+             [ "${{ steps.semgrep.outcome }}" != "success" ]; then
+            exit 1
+          fi
 
   app-tests:
     name: App Unit Tests
