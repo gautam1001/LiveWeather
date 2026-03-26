@@ -20,6 +20,68 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  code-quality:
+    name: Code Quality (SwiftLint + SwiftFormat + Semgrep)
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install code quality tools
+        run: |
+          brew install swiftlint swiftformat
+          python3 -m pip install --upgrade pip
+          python3 -m pip install semgrep
+
+      - name: Prepare quality reports folder
+        run: mkdir -p QualityReports
+
+      - name: Run SwiftLint
+        id: swiftlint
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          swiftlint --version | tee QualityReports/swiftlint-version.txt
+          swiftlint lint --strict --reporter github-actions-logging 2>&1 | tee QualityReports/swiftlint.log
+
+      - name: Run SwiftFormat (lint mode)
+        id: swiftformat
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          swiftformat --version | tee QualityReports/swiftformat-version.txt
+          swiftformat . --lint --reporter github-actions-log 2>&1 | tee QualityReports/swiftformat.log
+
+      - name: Run Semgrep
+        id: semgrep
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 -m semgrep --version | tee QualityReports/semgrep-version.txt
+          python3 -m semgrep scan \
+            --config p/swift \
+            --error \
+            --json \
+            --output QualityReports/semgrep.json \
+            --exclude .build \
+            --exclude DerivedData \
+            . 2>&1 | tee QualityReports/semgrep.log
+
+      - name: Upload code quality artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-quality-${{ github.run_number }}
+          path: QualityReports
+          retention-days: 7
+
+      - name: Fail if any quality check failed
+        if: steps.swiftlint.outcome == 'failure' || steps.swiftformat.outcome == 'failure' || steps.semgrep.outcome == 'failure'
+        run: |
+          echo "One or more code quality checks failed."
+          exit 1
+
   app-tests:
     name: App Unit Tests
     runs-on: macos-26
