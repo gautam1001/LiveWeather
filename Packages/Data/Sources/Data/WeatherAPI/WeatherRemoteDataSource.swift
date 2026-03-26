@@ -45,7 +45,7 @@ public struct WeatherAPIRemoteDataSource: WeatherRemoteDataSource {
             URLQueryItem(name: "q", value: queryValue),
             URLQueryItem(name: "days", value: String(config.days)),
             URLQueryItem(name: "alerts", value: config.includeAlerts ? "yes" : "no"),
-            URLQueryItem(name: "aqi", value: config.includeAQI ? "yes" : "no")
+            URLQueryItem(name: "aqi", value: config.includeAQI ? "yes" : "no"),
         ]
 
         if let language = config.language {

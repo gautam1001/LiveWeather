@@ -139,7 +139,7 @@ private final class WeatherRepositoryStub: WeatherRepository, @unchecked Sendabl
     }
 
     func recordedLocations() -> [Location] {
-        return locations
+        locations
     }
 }
 

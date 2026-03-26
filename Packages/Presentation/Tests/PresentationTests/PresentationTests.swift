@@ -87,7 +87,7 @@ private enum TestError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .upstream:
-            return "Unable to fetch weather data"
+            "Unable to fetch weather data"
         }
     }
 }

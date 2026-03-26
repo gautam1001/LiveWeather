@@ -15,7 +15,7 @@ enum FixtureError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case let .notFound(name):
-            return "Fixture not found: \(name)"
+            "Fixture not found: \(name)"
         }
     }
 }
