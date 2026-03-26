@@ -5,8 +5,7 @@ public final class WeatherRemoteRepository: WeatherRepository {
     private let dataSource: WeatherRemoteDataSource
     private let mapper: WeatherAPIMapper
 
-    public init(dataSource: WeatherRemoteDataSource,
-                mapper: WeatherAPIMapper = WeatherAPIMapper()) {
+    public init(dataSource: WeatherRemoteDataSource, mapper: WeatherAPIMapper = WeatherAPIMapper()) {
         self.dataSource = dataSource
         self.mapper = mapper
     }
