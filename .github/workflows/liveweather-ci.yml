@@ -2,8 +2,8 @@ name: iOS CI
 
 on:
   pull_request:
-    branches: 
-      - Development   # must match exact target branch name
+    branches:
+      - Development
       - main
     types:
       - opened
@@ -12,18 +12,32 @@ on:
       - ready_for_review
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: ios-ci-${{ github.ref }}
+  group: ios-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   app-tests:
-    #if: startsWith(github.head_ref, 'feature/')
     name: App Unit Tests
     runs-on: macos-26
     timeout-minutes: 30
+
     steps:
       - uses: actions/checkout@v5
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.swiftpm
+            ~/Library/Caches/org.swift.swiftpm
+            ~/Library/Developer/Xcode/DerivedData/SourcePackages
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved', 'Packages/**/Package.swift', 'LiveWeather.xcodeproj/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
 
       - name: Xcode Version
         run: xcodebuild -version
@@ -33,19 +47,61 @@ jobs:
 
       - name: Run LiveWeatherTests
         run: |
+          set -o pipefail
+          mkdir -p TestResults
           xcodebuild test \
             -project LiveWeather.xcodeproj \
             -scheme LiveWeather \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -only-testing:LiveWeatherTests
+            -only-testing:LiveWeatherTests \
+            -resultBundlePath TestResults/LiveWeatherTests.xcresult \
+            2>&1 | tee TestResults/liveweathertests.log
+
+      - name: Collect flaky-test diagnostics (on failure)
+        if: failure()
+        run: |
+          mkdir -p TestResults/debug
+          xcrun simctl list devices > TestResults/debug/simctl-devices.txt
+          xcrun simctl list runtimes > TestResults/debug/simctl-runtimes.txt
+          xcodebuild -showBuildSettings -project LiveWeather.xcodeproj -scheme LiveWeather > TestResults/debug/build-settings.txt
+
+      - name: Upload app test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-tests-${{ github.run_number }}
+          path: TestResults
+          retention-days: 7
 
   package-tests:
-    #if: startsWith(github.head_ref, 'feature/')
     name: Package Tests
     runs-on: macos-26
+
     steps:
       - uses: actions/checkout@v5
-      - run: swift test --package-path Packages/Domain
-      - run: swift test --package-path Packages/Data
-      - run: swift test --package-path Packages/Presentation
 
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.swiftpm
+            ~/Library/Caches/org.swift.swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('Packages/**/Package.swift', '**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run package tests
+        run: |
+          set -o pipefail
+          mkdir -p TestResults
+          swift test --package-path Packages/Domain 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Data 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Presentation 2>&1 | tee -a TestResults/package-tests.log
+
+      - name: Upload package test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-tests-${{ github.run_number }}
+          path: TestResults
+          retention-days: 7
