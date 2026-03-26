@@ -28,7 +28,7 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
         let dto = try await datasource.fetchWeather(for: location)
-        XCTAssertEqual(dto.current.temp_c, 28.5)
+        XCTAssertEqual(dto.current.tempC, 28.5)
     }
 
     func testDataSourceFailure() async throws {
