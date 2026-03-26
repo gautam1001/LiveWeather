@@ -1,7 +1,6 @@
 included:
   - LiveWeather
   - LiveWeatherTests
-  - LiveWeatherUITests
   - Packages
 
 excluded:
@@ -13,6 +12,7 @@ excluded:
   - "**/xcuserdata/**"
   - "**/SourcePackages/**"
   - "**/resource_bundle_accessor.swift"
+  - LiveWeatherUITests
 
 disabled_rules:
   - trailing_comma

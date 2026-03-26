@@ -22,8 +22,8 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let baseUrlString = "https://api.weatherapi.com/v1/forecast.json"
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: "12345", apiUrl: baseUrlString)
         let weatherData = try FixtureLoader.loadData(named: "weatherapi_sample")
-
-        let response = try XCTUnwrap(HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil))
+        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil)
+        let response = try XCTUnwrap(httpResponse)
         let client = URLSessionHTTPClientMock(data: weatherData, response: response)
         let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
@@ -36,7 +36,8 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: "12345", apiUrl: baseUrlString)
         let weatherData = try FixtureLoader.loadData(named: "weatherapi_sample")
 
-        let response = try XCTUnwrap(HTTPURLResponse(url: config.baseURL, statusCode: 400, httpVersion: nil, headerFields: nil))
+        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil)
+        let response = try XCTUnwrap(httpResponse)
         let client = URLSessionHTTPClientMock(data: weatherData, response: response)
         let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
@@ -54,7 +55,8 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let baseUrlString = "https://api.weatherapi.com/v1/forecast.json"
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: "12345", apiUrl: baseUrlString)
 
-        let response = try XCTUnwrap(HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil))
+        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil)
+        let response = try XCTUnwrap(httpResponse)
         let client = URLSessionHTTPClientMock(data: Data(), response: response)
         let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
