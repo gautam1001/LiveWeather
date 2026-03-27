@@ -124,7 +124,7 @@ jobs:
           args: >
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
-
+            
   app-tests:
     name: App Unit Tests
     runs-on: macos-26
