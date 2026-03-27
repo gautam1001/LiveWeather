@@ -108,24 +108,22 @@ jobs:
             exit 1
           fi
     
-    sonarcloud:
-      name: SonarQube Cloud Scan
-      runs-on: ubuntu-latest
-      needs: [code-quality, app-tests, package-tests]
-
-      steps:
-        - uses: actions/checkout@v5
-          with:
-            fetch-depth: 0
-
-        - name: SonarQube Scan
-          uses: SonarSource/sonarqube-scan-action@v7
-          env:
-            SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          with:
-            args: >
-              -Dsonar.qualitygate.wait=true
-              -Dsonar.qualitygate.timeout=300
+  sonarcloud:
+    name: SonarQube Cloud Scan
+    runs-on: ubuntu-latest
+    needs: [code-quality, app-tests, package-tests]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
 
   app-tests:
     name: App Unit Tests
