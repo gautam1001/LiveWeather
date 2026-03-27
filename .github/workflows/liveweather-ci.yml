@@ -159,8 +159,19 @@ jobs:
             -scheme LiveWeather \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -only-testing:LiveWeatherTests \
+            -enableCodeCoverage YES \
             -resultBundlePath TestResults/LiveWeatherTests.xcresult \
             2>&1 | tee TestResults/liveweathertests.log
+            
+      - name: Coverage Report (soft gate)
+        if: always()
+        continue-on-error: true
+        run: |
+          xcrun xccov view --report TestResults/LiveWeatherTests.xcresult > TestResults/coverage.txt
+          TOTAL=$(grep '^TOTAL' TestResults/coverage.txt | awk '{print $NF}')
+          echo "### Coverage (Soft Gate)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Total line coverage: **${TOTAL:-N/A}**" >> "$GITHUB_STEP_SUMMARY"
+
 
       - name: Collect flaky-test diagnostics (on failure)
         if: failure()
