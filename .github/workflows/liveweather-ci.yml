@@ -107,7 +107,7 @@ jobs:
              [ "${{ steps.semgrep.outcome }}" != "success" ]; then
             exit 1
           fi
-    
+
   sonarcloud:
     name: SonarQube Cloud Scan
     runs-on: ubuntu-latest
