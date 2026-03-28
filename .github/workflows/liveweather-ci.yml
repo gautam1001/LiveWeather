@@ -172,7 +172,6 @@ jobs:
           echo "### Coverage (Soft Gate)" >> "$GITHUB_STEP_SUMMARY"
           echo "- Total line coverage: **${TOTAL:-N/A}**" >> "$GITHUB_STEP_SUMMARY"
 
-
       - name: Collect flaky-test diagnostics (on failure)
         if: failure()
         run: |
