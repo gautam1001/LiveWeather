@@ -110,12 +110,27 @@ jobs:
 
   sonarcloud:
     name: SonarQube Cloud Scan
-    runs-on: ubuntu-latest
+    runs-on: macos-26
     needs: [code-quality, app-tests, package-tests]
     steps:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          
+      - name: Download app test artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: app-tests-${{ github.run_number }}
+          path: TestResults
+          
+      - name: Convert xcresult coverage to Sonar generic format
+        run: |
+          curl -sSLo xccov-to-sonarqube-generic.sh \
+            https://raw.githubusercontent.com/SonarSource/sonar-scanning-examples/master/swift-coverage/swift-coverage-example/xccov-to-sonarqube-generic.sh
+          chmod +x xccov-to-sonarqube-generic.sh
+          ./xccov-to-sonarqube-generic.sh TestResults/LiveWeatherTests.xcresult > TestResults/sonar-coverage.xml
+          test -s TestResults/sonar-coverage.xml
+          
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         env:
@@ -124,6 +139,7 @@ jobs:
           args: >
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
+            -Dsonar.coverageReportPaths=TestResults/sonar-coverage.xml
             
   app-tests:
     name: App Unit Tests
