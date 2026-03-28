@@ -4,9 +4,6 @@ on:
   workflow_run:
     workflows: ["iOS CI"]
     types: [completed]
-    branches:
-      - Development
-      - main
   workflow_dispatch:
 
 permissions:
@@ -18,8 +15,18 @@ concurrency:
 
 jobs:
   cd-dry-run:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'pull_request' &&
+        (
+          github.event.workflow_run.pull_requests[0].base.ref == 'Development' ||
+          github.event.workflow_run.pull_requests[0].base.ref == 'main'
+        )
+      )
+
     name: CD Dry Run (after CI success)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-26
     timeout-minutes: 45
 
