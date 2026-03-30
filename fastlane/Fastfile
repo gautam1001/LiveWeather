@@ -1,0 +1,111 @@
+default_platform(:ios)
+
+platform :ios do
+  PROJECT_PATH = "LiveWeather.xcodeproj"
+  BUILD_DIR = "build"
+
+  desc "Run app unit tests (development scheme)"
+  lane :test_dev do
+    scan(
+      project: PROJECT_PATH,
+      scheme: "LiveWeather",
+      device: "iPhone 17 Pro",
+      clean: true,
+      xcargs: "-enableCodeCoverage YES",
+      derived_data_path: "#{BUILD_DIR}/DerivedData",
+      output_directory: "#{BUILD_DIR}/test_output",
+      output_types: "junit",
+      output_files: "liveweather-tests.xml",
+      buildlog_path: "#{BUILD_DIR}/logs"
+    )
+  end
+
+  desc "Dry-run CD for Development (unsigned build + unsigned archive)"
+  lane :cd_dry_run_dev do
+    run_unsigned_cd_dry_run(
+      scheme: "LiveWeather",
+      configuration: "Debug",
+      artifact_prefix: "liveweather-dev"
+    )
+  end
+
+  desc "Dry-run CD for QA Release (unsigned build + unsigned archive)"
+  lane :cd_dry_run_qa_release do
+    run_unsigned_cd_dry_run(
+      scheme: "LiveWeather-QA-Release",
+      configuration: "QA Release",
+      artifact_prefix: "liveweather-qa-release"
+    )
+  end
+
+  desc "Dry-run CD for UAT (unsigned build + unsigned archive)"
+  lane :cd_dry_run_uat do
+    run_unsigned_cd_dry_run(
+      scheme: "LiveWeather-UAT",
+      configuration: "UAT",
+      artifact_prefix: "liveweather-uat"
+    )
+  end
+
+  desc "Dry-run CD for Production (unsigned build + unsigned archive)"
+  lane :cd_dry_run_prod do
+    run_unsigned_cd_dry_run(
+      scheme: "LiveWeather-Prod",
+      configuration: "Release",
+      artifact_prefix: "liveweather-prod"
+    )
+  end
+
+  desc "Run all dry-run CD lanes in sequence"
+  lane :cd_dry_run_all do
+    cd_dry_run_dev
+    cd_dry_run_qa_release
+    cd_dry_run_uat
+    cd_dry_run_prod
+  end
+
+  private_lane :run_unsigned_cd_dry_run do |options|
+    scheme = options[:scheme]
+    configuration = options[:configuration]
+    artifact_prefix = options[:artifact_prefix]
+
+    sh("mkdir -p #{BUILD_DIR}/logs #{BUILD_DIR}/artifacts #{BUILD_DIR}/archives #{BUILD_DIR}/DerivedData")
+    sh("xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme '#{scheme}'")
+
+    sh <<~CMD
+      set -o pipefail
+      xcodebuild build \
+        -project "#{PROJECT_PATH}" \
+        -scheme "#{scheme}" \
+        -configuration "#{configuration}" \
+        -destination "generic/platform=iOS Simulator" \
+        -derivedDataPath "#{BUILD_DIR}/DerivedData" \
+        CODE_SIGNING_ALLOWED=NO \
+        2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-build.log"
+    CMD
+
+    app_path = "#{BUILD_DIR}/DerivedData/Build/Products/#{configuration}-iphonesimulator/LiveWeather.app"
+    app_zip_path = "#{BUILD_DIR}/artifacts/#{artifact_prefix}.app.zip"
+
+    sh("test -d '#{app_path}'")
+    sh("ditto -c -k --sequesterRsrc --keepParent '#{app_path}' '#{app_zip_path}'")
+
+    archive_path = "#{BUILD_DIR}/archives/#{artifact_prefix}.xcarchive"
+    sh <<~CMD
+      set -o pipefail
+      xcodebuild archive \
+        -project "#{PROJECT_PATH}" \
+        -scheme "#{scheme}" \
+        -configuration "#{configuration}" \
+        -destination "generic/platform=iOS" \
+        -archivePath "#{archive_path}" \
+        CODE_SIGNING_ALLOWED=NO \
+        CODE_SIGNING_REQUIRED=NO \
+        2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-archive.log"
+    CMD
+
+    UI.success("Dry-run artifacts:")
+    UI.message("- App zip: #{app_zip_path}")
+    UI.message("- Archive: #{archive_path}")
+  end
+end
