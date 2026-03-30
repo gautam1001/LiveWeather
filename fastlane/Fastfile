@@ -1,8 +1,9 @@
 default_platform(:ios)
 
 platform :ios do
-  PROJECT_PATH = "LiveWeather.xcodeproj"
-  BUILD_DIR = "build"
+  REPO_ROOT = File.expand_path("..", __dir__)
+  PROJECT_PATH = File.join(REPO_ROOT, "LiveWeather.xcodeproj")
+  BUILD_DIR = File.join(REPO_ROOT, "build")
 
   desc "Run app unit tests (development scheme)"
   lane :test_dev do
@@ -69,43 +70,45 @@ platform :ios do
     configuration = options[:configuration]
     artifact_prefix = options[:artifact_prefix]
 
-    sh("mkdir -p #{BUILD_DIR}/logs #{BUILD_DIR}/artifacts #{BUILD_DIR}/archives #{BUILD_DIR}/DerivedData")
-    sh("xcodebuild -resolvePackageDependencies -project #{PROJECT_PATH} -scheme '#{scheme}'")
+    Dir.chdir(REPO_ROOT) do
+      sh("mkdir -p #{BUILD_DIR}/logs #{BUILD_DIR}/artifacts #{BUILD_DIR}/archives #{BUILD_DIR}/DerivedData")
+      sh("xcodebuild", "-resolvePackageDependencies", "-project", PROJECT_PATH, "-scheme", scheme)
 
-    sh <<~CMD
-      set -o pipefail
-      xcodebuild build \
-        -project "#{PROJECT_PATH}" \
-        -scheme "#{scheme}" \
-        -configuration "#{configuration}" \
-        -destination "generic/platform=iOS Simulator" \
-        -derivedDataPath "#{BUILD_DIR}/DerivedData" \
-        CODE_SIGNING_ALLOWED=NO \
-        2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-build.log"
-    CMD
+      sh <<~CMD
+        set -o pipefail
+        xcodebuild build \
+          -project "#{PROJECT_PATH}" \
+          -scheme "#{scheme}" \
+          -configuration "#{configuration}" \
+          -destination "generic/platform=iOS Simulator" \
+          -derivedDataPath "#{BUILD_DIR}/DerivedData" \
+          CODE_SIGNING_ALLOWED=NO \
+          2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-build.log"
+      CMD
 
-    app_path = "#{BUILD_DIR}/DerivedData/Build/Products/#{configuration}-iphonesimulator/LiveWeather.app"
-    app_zip_path = "#{BUILD_DIR}/artifacts/#{artifact_prefix}.app.zip"
+      app_path = "#{BUILD_DIR}/DerivedData/Build/Products/#{configuration}-iphonesimulator/LiveWeather.app"
+      app_zip_path = "#{BUILD_DIR}/artifacts/#{artifact_prefix}.app.zip"
 
-    sh("test -d '#{app_path}'")
-    sh("ditto -c -k --sequesterRsrc --keepParent '#{app_path}' '#{app_zip_path}'")
+      sh("test -d '#{app_path}'")
+      sh("ditto -c -k --sequesterRsrc --keepParent '#{app_path}' '#{app_zip_path}'")
 
-    archive_path = "#{BUILD_DIR}/archives/#{artifact_prefix}.xcarchive"
-    sh <<~CMD
-      set -o pipefail
-      xcodebuild archive \
-        -project "#{PROJECT_PATH}" \
-        -scheme "#{scheme}" \
-        -configuration "#{configuration}" \
-        -destination "generic/platform=iOS" \
-        -archivePath "#{archive_path}" \
-        CODE_SIGNING_ALLOWED=NO \
-        CODE_SIGNING_REQUIRED=NO \
-        2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-archive.log"
-    CMD
+      archive_path = "#{BUILD_DIR}/archives/#{artifact_prefix}.xcarchive"
+      sh <<~CMD
+        set -o pipefail
+        xcodebuild archive \
+          -project "#{PROJECT_PATH}" \
+          -scheme "#{scheme}" \
+          -configuration "#{configuration}" \
+          -destination "generic/platform=iOS" \
+          -archivePath "#{archive_path}" \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          2>&1 | tee "#{BUILD_DIR}/logs/#{artifact_prefix}-archive.log"
+      CMD
 
-    UI.success("Dry-run artifacts:")
-    UI.message("- App zip: #{app_zip_path}")
-    UI.message("- Archive: #{archive_path}")
+      UI.success("Dry-run artifacts:")
+      UI.message("- App zip: #{app_zip_path}")
+      UI.message("- Archive: #{archive_path}")
+    end
   end
 end
