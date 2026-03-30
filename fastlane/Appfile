@@ -1,0 +1,5 @@
+app_identifier("com.prashant.liveweather")
+
+# Configure these once you have an Apple Developer account:
+# apple_id("your-apple-id@example.com")
+# team_id("YOUR_TEAM_ID")
