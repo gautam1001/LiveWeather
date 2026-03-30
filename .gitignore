@@ -65,3 +65,6 @@ fastlane/test_output
 *.xcworkspace/xcuserdata/
 *.xcodeproj/xcuserdata/
 *.xcuserstate
+
+# SwiftPM/Xcode generated package workspace data
+Packages/**/.swiftpm/

@@ -1,0 +1,7 @@
+#include "Secrets.xcconfig"
+
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = UAT
+
+// Product
+PRODUCT_BUNDLE_IDENTIFIER = com.prashant.liveweather.uat
+INFOPLIST_KEY_CFBundleDisplayName = LiveWeather UAT

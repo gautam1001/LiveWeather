@@ -1,8 +1,1 @@
-#include "Secrets.xcconfig"
-
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = QA
-
-
-// Product
-PRODUCT_BUNDLE_IDENTIFIER = com.prashant.liveweather.qa
-INFOPLIST_KEY_CFBundleDisplayName = LiveWeather QA
+#include "QA-Common.xcconfig"
