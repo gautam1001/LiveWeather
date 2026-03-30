@@ -5,6 +5,18 @@ on:
     workflows: ["iOS CI"]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      lane:
+        description: "Fastlane lane to run"
+        required: true
+        default: cd_dry_run_dev
+        type: choice
+        options:
+          - cd_dry_run_dev
+          - cd_dry_run_qa_release
+          - cd_dry_run_uat
+          - cd_dry_run_prod
+          - cd_dry_run_all
 
 permissions:
   contents: read
@@ -45,6 +57,11 @@ jobs:
           echo "Head branch: ${{ github.event.workflow_run.head_branch || github.ref_name }}"
           echo "Head SHA: ${{ github.event.workflow_run.head_sha || github.sha }}"
 
+      - name: Set up Ruby and bundle install
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
@@ -59,46 +76,36 @@ jobs:
       - name: Xcode version
         run: xcodebuild -version
 
-      - name: Resolve Swift packages
-        run: xcodebuild -resolvePackageDependencies -project LiveWeather.xcodeproj -scheme LiveWeather
-
-      - name: Build Release for iOS Simulator (unsigned)
+      - name: Select Fastlane lane
+        id: select_lane
         run: |
-          set -o pipefail
-          mkdir -p logs
-          xcodebuild build \
-            -project LiveWeather.xcodeproj \
-            -scheme LiveWeather \
-            -configuration Release \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath build/DerivedData \
-            CODE_SIGNING_ALLOWED=NO \
-            2>&1 | tee logs/build-simulator.log
-
-      - name: Package dry-run artifacts
-        run: |
-          set -e
-          mkdir -p dist
-          APP_PATH="build/DerivedData/Build/Products/Release-iphonesimulator/LiveWeather.app"
-          if [ ! -d "$APP_PATH" ]; then
-            echo "Simulator app not found at $APP_PATH"
-            exit 1
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            LANE="${{ inputs.lane }}"
+          else
+            BASE_REF="${{ github.event.workflow_run.pull_requests[0].base.ref }}"
+            if [ "$BASE_REF" = "Development" ]; then
+              LANE="cd_dry_run_dev"
+            elif [ "$BASE_REF" = "main" ]; then
+              LANE="cd_dry_run_prod"
+            else
+              LANE="cd_dry_run_all"
+            fi
           fi
 
-          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "dist/LiveWeather-simulator.app.zip"
+          echo "lane=$LANE" >> "$GITHUB_OUTPUT"
+          echo "Selected lane: $LANE"
 
-          {
-            echo "LiveWeather CD Dry Run"
-            echo "Commit: ${{ github.event.workflow_run.head_sha || github.sha }}"
-            echo "Branch: ${{ github.event.workflow_run.head_branch || github.ref_name }}"
-            echo "Date (UTC): $(date -u '+%Y-%m-%d %H:%M:%S')"
-          } > dist/release-notes.md
+      - name: Run Fastlane CD dry run
+        run: bundle exec fastlane ios ${{ steps.select_lane.outputs.lane }}
 
       - name: Upload CD dry-run artifacts
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: cd-dry-run-${{ github.run_number }}
           path: |
-            dist
-            logs
+            build/artifacts
+            build/archives
+            build/logs
+            build/test_output
           retention-days: 14
