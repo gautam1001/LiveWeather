@@ -149,6 +149,12 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Set up Ruby and bundle install
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
+
       - name: Cache SwiftPM
         uses: actions/cache@v4
         with:
@@ -163,21 +169,29 @@ jobs:
       - name: Xcode Version
         run: xcodebuild -version
 
-      - name: Resolve Swift Packages
-        run: xcodebuild -resolvePackageDependencies -project LiveWeather.xcodeproj -scheme LiveWeather
-
-      - name: Run LiveWeatherTests
+      - name: Run LiveWeatherTests via Fastlane
         run: |
           set -o pipefail
           mkdir -p TestResults
-          xcodebuild test \
-            -project LiveWeather.xcodeproj \
-            -scheme LiveWeather \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -only-testing:LiveWeatherTests \
-            -enableCodeCoverage YES \
-            -resultBundlePath TestResults/LiveWeatherTests.xcresult \
-            2>&1 | tee TestResults/liveweathertests.log
+          bundle exec fastlane ios test_dev 2>&1 | tee TestResults/liveweathertests.log
+
+      - name: Collect Fastlane test artifacts
+        if: always()
+        run: |
+          mkdir -p TestResults
+          if [ -f build/test_output/liveweather-tests.xml ]; then
+            cp build/test_output/liveweather-tests.xml TestResults/liveweather-tests.xml
+          fi
+          if [ -d build/logs ]; then
+            cp -R build/logs TestResults/build-logs
+          fi
+
+          XCRESULT_PATH=$(find build/DerivedData/Logs/Test -name '*.xcresult' -type d | sort | tail -n 1 || true)
+          if [ -n "$XCRESULT_PATH" ]; then
+            cp -R "$XCRESULT_PATH" TestResults/LiveWeatherTests.xcresult
+          else
+            echo "::warning::No .xcresult found under build/DerivedData/Logs/Test"
+          fi
             
       - name: Coverage Report (soft gate)
         if: always()
