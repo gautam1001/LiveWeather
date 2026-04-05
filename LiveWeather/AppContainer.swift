@@ -5,29 +5,28 @@
 //  Created by Prashant Gautam on 21/03/26.
 //
 
-import Data
-import Domain
+import CurrentWeatherFeatureAPI
 import Foundation
-import Presentation
 
-@MainActor
 final class AppContainer {
-    typealias WeatherRepositoryFactory = (_ apiKey: String, _ apiURL: String) -> WeatherRepository
+    typealias CurrentWeatherViewModelFactoryBuilder = (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
 
-    private let repository: WeatherRepository
+    private let weatherViewModelFactory: CurrentWeatherViewModelFactory
 
-    convenience init(repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory) {
+    convenience init(
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder = CurrentWeatherFeatureFactory.liveViewModelFactory
+    ) {
         self.init(
             weatherAPIKey: AppConfig.weatherAPIKey,
             weatherAPIURL: AppConfig.weatherAPIUrl,
-            repositoryFactory: repositoryFactory
+            currentWeatherFeatureBuilder: currentWeatherFeatureBuilder
         )
     }
 
     init(
         weatherAPIKey: String,
         weatherAPIURL: String,
-        repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder = CurrentWeatherFeatureFactory.liveViewModelFactory
     ) {
         #if DEV
             print("DEV")
@@ -36,17 +35,10 @@ final class AppContainer {
         #elseif PROD
             print("PRODUCTION")
         #endif
-        repository = repositoryFactory(weatherAPIKey, weatherAPIURL)
+        weatherViewModelFactory = currentWeatherFeatureBuilder(weatherAPIKey, weatherAPIURL)
     }
 
-    func makeWeatherViewModel() -> WeatherOverviewViewModel {
-        WeatherOverviewViewModel(usecase: CurrentWeatherUsecase(repository: repository))
-    }
-
-    private nonisolated static func liveRepositoryFactory(apiKey: String, apiURL: String) -> WeatherRepository {
-        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apiKey, apiUrl: apiURL)
-        let client = URLSessionHTTPClient(session: URLSession.shared)
-        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
-        return WeatherRemoteRepository(dataSource: dataSource)
+    func makeWeatherViewModel() -> CurrentWeatherViewModel {
+        weatherViewModelFactory()
     }
 }

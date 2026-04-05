@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		483A24F62F6ED2C300D95954 /* Domain in Frameworks */ = {isa = PBXBuildFile; productRef = 483A24F52F6ED2C300D95954 /* Domain */; };
-		483A24F82F6ED2C300D95954 /* Data in Frameworks */ = {isa = PBXBuildFile; productRef = 483A24F72F6ED2C300D95954 /* Data */; };
-		483A24FA2F6ED2C300D95954 /* Presentation in Frameworks */ = {isa = PBXBuildFile; productRef = 483A24F92F6ED2C300D95954 /* Presentation */; };
+		49A100012F80000100AA0001 /* CurrentWeatherFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100112F80000100AA0001 /* CurrentWeatherFeatureAPI */; };
+		49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100122F80000100AA0001 /* SearchFeatureAPI */; };
+		49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100132F80000100AA0001 /* ForecastFeatureAPI */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,9 +75,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				483A24F82F6ED2C300D95954 /* Data in Frameworks */,
-				483A24FA2F6ED2C300D95954 /* Presentation in Frameworks */,
-				483A24F62F6ED2C300D95954 /* Domain in Frameworks */,
+				49A100012F80000100AA0001 /* CurrentWeatherFeatureAPI in Frameworks */,
+				49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */,
+				49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,9 +146,9 @@
 			);
 			name = LiveWeather;
 			packageProductDependencies = (
-				483A24F52F6ED2C300D95954 /* Domain */,
-				483A24F72F6ED2C300D95954 /* Data */,
-				483A24F92F6ED2C300D95954 /* Presentation */,
+				49A100112F80000100AA0001 /* CurrentWeatherFeatureAPI */,
+				49A100122F80000100AA0001 /* SearchFeatureAPI */,
+				49A100132F80000100AA0001 /* ForecastFeatureAPI */,
 			);
 			productName = LiveWeather;
 			productReference = 48BF885B2F6D9842009A4646 /* LiveWeather Dev.app */;
@@ -236,6 +236,9 @@
 				483A24EA2F6ED11800D95954 /* XCLocalSwiftPackageReference "Packages/Domain" */,
 				483A24F22F6ED25200D95954 /* XCLocalSwiftPackageReference "Packages/Data" */,
 				483A24F32F6ED26500D95954 /* XCLocalSwiftPackageReference "Packages/Presentation" */,
+				49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */,
+				49A100A22F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/SearchFeature" */,
+				49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 48BF885C2F6D9842009A4646 /* Products */;
@@ -1041,6 +1044,18 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Presentation;
 		};
+		49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/CurrentWeatherFeature;
+		};
+		49A100A22F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/SearchFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/SearchFeature;
+		};
+		49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/ForecastFeature;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1058,6 +1073,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 483A24F32F6ED26500D95954 /* XCLocalSwiftPackageReference "Packages/Presentation" */;
 			productName = Presentation;
+		};
+		49A100112F80000100AA0001 /* CurrentWeatherFeatureAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */;
+			productName = CurrentWeatherFeatureAPI;
+		};
+		49A100122F80000100AA0001 /* SearchFeatureAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A100A22F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/SearchFeature" */;
+			productName = SearchFeatureAPI;
+		};
+		49A100132F80000100AA0001 /* ForecastFeatureAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */;
+			productName = ForecastFeatureAPI;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

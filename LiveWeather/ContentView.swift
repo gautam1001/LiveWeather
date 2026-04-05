@@ -5,14 +5,13 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
-import Domain
-import Presentation
+import CurrentWeatherFeatureAPI
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var viewModel: WeatherOverviewViewModel
+    @StateObject private var viewModel: CurrentWeatherViewModel
 
-    init(viewModel: WeatherOverviewViewModel) {
+    init(viewModel: CurrentWeatherViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
 
@@ -21,7 +20,7 @@ struct ContentView: View {
             content
                 .navigationTitle("New Delhi")
                 .task {
-                    await viewModel.load(for: "New Delhi")
+                    await viewModel.loadWeather(for: "New Delhi")
                 }
         }
     }
@@ -29,7 +28,9 @@ struct ContentView: View {
     /// Custom view
     @ViewBuilder
     private var content: some View {
-        switch viewModel.state {
+        let state = viewModel.screenState
+
+        switch state {
         case .idle, .loading:
             ProgressView("Loading weather...")
         case let .failed(message):
@@ -40,11 +41,11 @@ struct ContentView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-        case let .loaded(overview):
+        case let .loaded(weather):
             HStack {
-                Text("Condition Summary: \(overview.current.conditionSummary)")
+                Text("Condition Summary: \(weather.conditionSummary)")
                 Spacer()
-                Text("\(overview.current.temperatureC, specifier: "%.1f")°C")
+                Text("\(weather.temperatureC, specifier: "%.1f")°C")
             }.padding()
         }
     }
