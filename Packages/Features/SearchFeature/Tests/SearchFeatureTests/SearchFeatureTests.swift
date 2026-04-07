@@ -1,4 +1,5 @@
 import SearchFeatureAPI
+import SearchFeatureImpl
 import XCTest
 
 final class SearchFeatureTests: XCTestCase {

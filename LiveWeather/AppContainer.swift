@@ -6,6 +6,7 @@
 //
 
 import CurrentWeatherFeatureAPI
+import CurrentWeatherFeatureImpl
 import Foundation
 
 final class AppContainer {

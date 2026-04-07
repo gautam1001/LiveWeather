@@ -19,14 +19,20 @@ let package = Package(
         ),
     ],
     targets: [
-        .target(name: "SearchFeatureImpl"),
+        .target(
+            name: "SearchFeatureImpl",
+            dependencies: ["SearchFeatureAPI"]
+        ),
         .target(
             name: "SearchFeatureAPI",
-            dependencies: ["SearchFeatureImpl"]
+            dependencies: []
         ),
         .testTarget(
             name: "SearchFeatureTests",
-            dependencies: ["SearchFeatureAPI"]
+            dependencies: [
+                "SearchFeatureAPI",
+                "SearchFeatureImpl",
+            ]
         ),
     ]
 )

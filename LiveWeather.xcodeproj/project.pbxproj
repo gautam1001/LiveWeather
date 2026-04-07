@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		49A100012F80000100AA0001 /* CurrentWeatherFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100112F80000100AA0001 /* CurrentWeatherFeatureAPI */; };
+		49A100042F80000100AA0001 /* CurrentWeatherFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */; };
 		49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100122F80000100AA0001 /* SearchFeatureAPI */; };
 		49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100132F80000100AA0001 /* ForecastFeatureAPI */; };
 /* End PBXBuildFile section */
@@ -76,6 +77,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				49A100012F80000100AA0001 /* CurrentWeatherFeatureAPI in Frameworks */,
+				49A100042F80000100AA0001 /* CurrentWeatherFeatureImpl in Frameworks */,
 				49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */,
 				49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */,
 			);
@@ -147,6 +149,7 @@
 			name = LiveWeather;
 			packageProductDependencies = (
 				49A100112F80000100AA0001 /* CurrentWeatherFeatureAPI */,
+				49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */,
 				49A100122F80000100AA0001 /* SearchFeatureAPI */,
 				49A100132F80000100AA0001 /* ForecastFeatureAPI */,
 			);
@@ -1078,6 +1081,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */;
 			productName = CurrentWeatherFeatureAPI;
+		};
+		49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */;
+			productName = CurrentWeatherFeatureImpl;
 		};
 		49A100122F80000100AA0001 /* SearchFeatureAPI */ = {
 			isa = XCSwiftPackageProductDependency;

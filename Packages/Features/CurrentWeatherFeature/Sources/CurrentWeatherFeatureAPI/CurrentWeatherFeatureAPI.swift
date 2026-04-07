@@ -1,4 +1,3 @@
-import CurrentWeatherFeatureImpl
 import Presentation
 
 public typealias CurrentWeatherViewModel = WeatherOverviewViewModel
@@ -49,28 +48,4 @@ public extension CurrentWeatherViewModel {
 
 public protocol CurrentWeatherFeatureProviding {
     func makeWeatherViewModel() -> CurrentWeatherViewModel
-}
-
-extension LiveCurrentWeatherFeatureProvider: CurrentWeatherFeatureProviding {}
-
-public enum CurrentWeatherFeatureFactory {
-    public static func live(
-        weatherAPIKey: String,
-        weatherAPIURL: String
-    ) -> any CurrentWeatherFeatureProviding {
-        LiveCurrentWeatherFeatureProvider(
-            weatherAPIKey: weatherAPIKey,
-            weatherAPIURL: weatherAPIURL
-        )
-    }
-
-    public static func liveViewModelFactory(
-        weatherAPIKey: String,
-        weatherAPIURL: String
-    ) -> CurrentWeatherViewModelFactory {
-        let provider = live(weatherAPIKey: weatherAPIKey, weatherAPIURL: weatherAPIURL)
-        return {
-            provider.makeWeatherViewModel()
-        }
-    }
 }

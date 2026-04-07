@@ -6,6 +6,7 @@
 //
 
 import CurrentWeatherFeatureAPI
+import CurrentWeatherFeatureImpl
 @testable import LiveWeather
 import XCTest
 

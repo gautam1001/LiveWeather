@@ -1,4 +1,5 @@
 import ForecastFeatureAPI
+import ForecastFeatureImpl
 import XCTest
 
 final class ForecastFeatureTests: XCTestCase {

@@ -1,4 +1,5 @@
 import CurrentWeatherFeatureAPI
+import CurrentWeatherFeatureImpl
 import XCTest
 
 @MainActor

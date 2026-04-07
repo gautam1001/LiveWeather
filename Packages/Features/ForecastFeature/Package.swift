@@ -19,14 +19,20 @@ let package = Package(
         ),
     ],
     targets: [
-        .target(name: "ForecastFeatureImpl"),
+        .target(
+            name: "ForecastFeatureImpl",
+            dependencies: ["ForecastFeatureAPI"]
+        ),
         .target(
             name: "ForecastFeatureAPI",
-            dependencies: ["ForecastFeatureImpl"]
+            dependencies: []
         ),
         .testTarget(
             name: "ForecastFeatureTests",
-            dependencies: ["ForecastFeatureAPI"]
+            dependencies: [
+                "ForecastFeatureAPI",
+                "ForecastFeatureImpl",
+            ]
         ),
     ]
 )

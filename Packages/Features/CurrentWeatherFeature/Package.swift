@@ -27,6 +27,7 @@ let package = Package(
         .target(
             name: "CurrentWeatherFeatureImpl",
             dependencies: [
+                "CurrentWeatherFeatureAPI",
                 .product(name: "Data", package: "Data"),
                 .product(name: "Domain", package: "Domain"),
                 .product(name: "Presentation", package: "Presentation"),
@@ -35,13 +36,15 @@ let package = Package(
         .target(
             name: "CurrentWeatherFeatureAPI",
             dependencies: [
-                "CurrentWeatherFeatureImpl",
                 .product(name: "Presentation", package: "Presentation"),
             ]
         ),
         .testTarget(
             name: "CurrentWeatherFeatureTests",
-            dependencies: ["CurrentWeatherFeatureAPI"]
+            dependencies: [
+                "CurrentWeatherFeatureAPI",
+                "CurrentWeatherFeatureImpl",
+            ]
         ),
     ]
 )
