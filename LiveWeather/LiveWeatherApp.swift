@@ -13,7 +13,12 @@ struct LiveWeatherApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: container.makeWeatherViewModel())
+            ContentView(
+                viewModel: container.makeWeatherViewModel(),
+                forecastLoader: {
+                    try await container.fetchDefaultForecast()
+                }
+            )
         }
     }
 }

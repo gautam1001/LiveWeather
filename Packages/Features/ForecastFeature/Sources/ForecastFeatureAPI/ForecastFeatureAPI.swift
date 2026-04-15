@@ -12,6 +12,6 @@ public struct ForecastDay: Equatable, Sendable {
     }
 }
 
-public protocol ForecastFeatureProviding {
+public protocol ForecastFeatureProviding: Sendable {
     func fetchForecast(location: String, days: Int) async throws -> [ForecastDay]
 }

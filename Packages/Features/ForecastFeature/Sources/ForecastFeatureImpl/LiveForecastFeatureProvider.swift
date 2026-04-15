@@ -1,29 +1,40 @@
+import Data
 import ForecastFeatureAPI
 import Foundation
 
-public final class LiveForecastFeatureProvider {
+public actor LiveForecastFeatureProvider {
     private let service: LiveForecastFeatureService
 
-    public init(service: LiveForecastFeatureService = LiveForecastFeatureService()) {
+    public init(weatherAPIKey: String, weatherAPIURL: String) {
+        service = Self.liveService(weatherAPIKey: weatherAPIKey, weatherAPIURL: weatherAPIURL)
+    }
+
+    public init(service: LiveForecastFeatureService) {
         self.service = service
     }
 
     public func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
-        let snapshots = try await service.fetchForecast(location: location, days: days)
-        return snapshots.map { snapshot in
-            ForecastDay(
-                dateLabel: snapshot.dateLabel,
-                temperatureC: snapshot.temperatureC,
-                summary: snapshot.summary
-            )
-        }
+        let safeLocation = String(location)
+        return try await service.fetchForecast(location: safeLocation, days: days)
     }
 }
 
 extension LiveForecastFeatureProvider: ForecastFeatureProviding {}
 
 public enum ForecastFeatureFactory {
-    public static func live() -> any ForecastFeatureProviding {
-        LiveForecastFeatureProvider()
+    public static func live(weatherAPIKey: String, weatherAPIURL: String) -> any ForecastFeatureProviding {
+        LiveForecastFeatureProvider(
+            weatherAPIKey: weatherAPIKey,
+            weatherAPIURL: weatherAPIURL
+        )
+    }
+}
+
+private extension LiveForecastFeatureProvider {
+    static func liveService(weatherAPIKey: String, weatherAPIURL: String) -> LiveForecastFeatureService {
+        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: weatherAPIKey, apiUrl: weatherAPIURL)
+        let client = URLSessionHTTPClient(session: URLSession.shared)
+        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        return LiveForecastFeatureService(dataSource: dataSource)
     }
 }

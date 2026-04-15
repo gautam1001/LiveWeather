@@ -11,6 +11,7 @@
 		49A100042F80000100AA0001 /* CurrentWeatherFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */; };
 		49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100122F80000100AA0001 /* SearchFeatureAPI */; };
 		49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100132F80000100AA0001 /* ForecastFeatureAPI */; };
+		49A100062F80000100AA0001 /* ForecastFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100162F80000100AA0001 /* ForecastFeatureImpl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -80,6 +81,7 @@
 				49A100042F80000100AA0001 /* CurrentWeatherFeatureImpl in Frameworks */,
 				49A100022F80000100AA0001 /* SearchFeatureAPI in Frameworks */,
 				49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */,
+				49A100062F80000100AA0001 /* ForecastFeatureImpl in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +154,7 @@
 				49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */,
 				49A100122F80000100AA0001 /* SearchFeatureAPI */,
 				49A100132F80000100AA0001 /* ForecastFeatureAPI */,
+				49A100162F80000100AA0001 /* ForecastFeatureImpl */,
 			);
 			productName = LiveWeather;
 			productReference = 48BF885B2F6D9842009A4646 /* LiveWeather Dev.app */;
@@ -1096,6 +1099,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */;
 			productName = ForecastFeatureAPI;
+		};
+		49A100162F80000100AA0001 /* ForecastFeatureImpl */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */;
+			productName = ForecastFeatureImpl;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -18,10 +18,16 @@ let package = Package(
             targets: ["ForecastFeatureImpl"]
         ),
     ],
+    dependencies: [
+        .package(path: "../../Data"),
+    ],
     targets: [
         .target(
             name: "ForecastFeatureImpl",
-            dependencies: ["ForecastFeatureAPI"]
+            dependencies: [
+                "ForecastFeatureAPI",
+                .product(name: "Data", package: "Data"),
+            ]
         ),
         .target(
             name: "ForecastFeatureAPI",
