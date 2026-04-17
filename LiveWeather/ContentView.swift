@@ -129,7 +129,6 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder
     private var forecastSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("5-Day Forecast")
