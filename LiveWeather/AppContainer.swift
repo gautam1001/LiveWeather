@@ -12,14 +12,17 @@ import ForecastFeatureImpl
 import Foundation
 
 final class AppContainer {
-    typealias CurrentWeatherViewModelFactoryBuilder = (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
-    typealias ForecastFeatureBuilder = (_ apiKey: String, _ apiURL: String) -> any ForecastFeatureProviding
+    typealias CurrentWeatherViewModelFactoryBuilder =
+        (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
+    typealias ForecastFeatureBuilder =
+        (_ apiKey: String, _ apiURL: String) -> any ForecastFeatureProviding
 
     private let weatherViewModelFactory: CurrentWeatherViewModelFactory
     private let forecastProvider: any ForecastFeatureProviding
 
     convenience init(
-        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder = CurrentWeatherFeatureFactory.liveViewModelFactory,
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
+            CurrentWeatherFeatureFactory.liveViewModelFactory,
         forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live
     ) {
         self.init(
@@ -33,7 +36,8 @@ final class AppContainer {
     init(
         weatherAPIKey: String,
         weatherAPIURL: String,
-        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder = CurrentWeatherFeatureFactory.liveViewModelFactory,
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
+            CurrentWeatherFeatureFactory.liveViewModelFactory,
         forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live
     ) {
         #if DEV
@@ -55,4 +59,3 @@ final class AppContainer {
         try await forecastProvider.fetchForecast(location: "New Delhi", days: 5)
     }
 }
- 

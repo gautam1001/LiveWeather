@@ -59,7 +59,10 @@ public struct WeatherAPIRemoteDataSource: WeatherRemoteDataSource {
     }
 
     private func buildForecastURL(for location: String, days: Int) throws -> URL {
-        guard var components = URLComponents(url: makeForecastBaseURL(from: config.baseURL), resolvingAgainstBaseURL: false) else {
+        guard var components = URLComponents(
+            url: makeForecastBaseURL(from: config.baseURL),
+            resolvingAgainstBaseURL: false
+        ) else {
             throw WeatherAPIError.invalidURL
         }
 
