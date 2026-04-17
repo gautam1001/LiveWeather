@@ -5,9 +5,10 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
-import Domain
+import CurrentWeatherFeatureAPI
+import CurrentWeatherFeatureImpl
+import ForecastFeatureAPI
 @testable import LiveWeather
-import Presentation
 import XCTest
 
 final class LiveWeatherTests: XCTestCase {
@@ -38,125 +39,167 @@ final class LiveWeatherTests: XCTestCase {
     }
 
     @MainActor
-    func testAppContainerBuildsRepositoryFromInjectedConfigValues() async {
-        let repository = WeatherRepositoryStub(result: .success(sampleWeather))
-        let factorySpy = RepositoryFactorySpy(repository: repository)
-
-        _ = AppContainer(
+    func testAppContainerBuildsFeatureFromInjectedConfigValues() {
+        let provider = CurrentWeatherFeatureFactory.live(
             weatherAPIKey: "test-key",
-            weatherAPIURL: "https://example.com/v1/current.json",
-            repositoryFactory: { apiKey, apiURL in
-                factorySpy.make(apiKey: apiKey, apiURL: apiURL)
-            }
+            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
         )
+        let builderSpy = CurrentWeatherFeatureBuilderSpy(viewModelFactory: {
+            provider.makeWeatherViewModel()
+        })
 
-        XCTAssertEqual(factorySpy.receivedInputs.count, 1)
-        XCTAssertEqual(factorySpy.receivedInputs.first?.apiKey, "test-key")
-        XCTAssertEqual(factorySpy.receivedInputs.first?.apiURL, "https://example.com/v1/current.json")
-        await Task.yield()
-    }
-
-    @MainActor
-    func testAppContainerCreatesIndependentViewModels() async {
-        let repository = WeatherRepositoryStub(result: .success(sampleWeather))
         let container = AppContainer(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
-            repositoryFactory: { _, _ in repository }
+            currentWeatherFeatureBuilder: { apiKey, apiURL in
+                builderSpy.make(apiKey: apiKey, apiURL: apiURL)
+            }
         )
+        LiveWeatherTestRetainer.retain(builderSpy)
+        LiveWeatherTestRetainer.retain(container)
+
+        XCTAssertEqual(builderSpy.receivedInputs.count, 1)
+        XCTAssertEqual(builderSpy.receivedInputs.first?.apiKey, "test-key")
+        XCTAssertEqual(builderSpy.receivedInputs.first?.apiURL, "https://example.com/v1/current.json")
+    }
+
+    @MainActor
+    func testAppContainerCreatesIndependentViewModels() {
+        let provider = CurrentWeatherFeatureFactory.live(
+            weatherAPIKey: "test-key",
+            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+        )
+        let container = AppContainer(
+            weatherAPIKey: "test-key",
+            weatherAPIURL: "https://example.com/v1/current.json",
+            currentWeatherFeatureBuilder: { _, _ in
+                {
+                    provider.makeWeatherViewModel()
+                }
+            }
+        )
+        LiveWeatherTestRetainer.retain(container)
 
         let first = container.makeWeatherViewModel()
         let second = container.makeWeatherViewModel()
 
         XCTAssertFalse(first === second)
-        await Task.yield()
     }
 
     @MainActor
-    func testContainerViewModelLoadTransitionsToLoadedStateOnSuccess() async {
-        let repository = WeatherRepositoryStub(result: .success(sampleWeather))
+    func testContainerUsesFeatureProviderToCreateViewModels() {
+        let factorySpy = CurrentWeatherViewModelFactorySpy()
         let container = AppContainer(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
-            repositoryFactory: { _, _ in repository }
+            currentWeatherFeatureBuilder: { _, _ in
+                {
+                    factorySpy.make()
+                }
+            }
         )
-        let viewModel = container.makeWeatherViewModel()
+        LiveWeatherTestRetainer.retain(container)
 
-        await viewModel.load(for: "Ghaziabad")
+        _ = container.makeWeatherViewModel()
+        _ = container.makeWeatherViewModel()
 
-        guard case let .loaded(overview) = viewModel.state else {
-            return XCTFail("Expected .loaded state")
-        }
-
-        XCTAssertEqual(overview.locationName, "Ghaziabad")
-        XCTAssertEqual(overview.current, sampleWeather)
-        let requested = repository.recordedLocations()
-        XCTAssertEqual(requested.count, 1)
-        XCTAssertEqual(requested.first?.name, "Ghaziabad")
+        XCTAssertEqual(factorySpy.makeWeatherViewModelCallCount, 2)
     }
 
     @MainActor
-    func testContainerViewModelLoadTransitionsToFailedStateOnFailure() async {
-        let repository = WeatherRepositoryStub(result: .failure(WeatherRepositoryStubError.network))
+    func testAppContainerFetchDefaultForecastUsesExpectedLocationAndDays() async throws {
+        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
+            weatherAPIKey: "test-key",
+            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+        )
+        let forecastProviderSpy = ForecastFeatureProviderSpy(
+            stubbedDays: [ForecastDay(dateLabel: "Fri, 11 Apr", temperatureC: 31, summary: "Sunny")]
+        )
+
         let container = AppContainer(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
-            repositoryFactory: { _, _ in repository }
+            currentWeatherFeatureBuilder: { _, _ in
+                {
+                    currentWeatherProvider.makeWeatherViewModel()
+                }
+            },
+            forecastFeatureBuilder: { _, _ in
+                forecastProviderSpy
+            }
         )
-        let viewModel = container.makeWeatherViewModel()
+        LiveWeatherTestRetainer.retain(container)
 
-        await viewModel.load(for: "Ghaziabad")
+        let forecast = try await container.fetchDefaultForecast()
 
-        guard case let .failed(message) = viewModel.state else {
-            return XCTFail("Expected .failed state")
-        }
+        XCTAssertEqual(forecast.count, 1)
+        XCTAssertEqual(forecast.first?.summary, "Sunny")
 
-        XCTAssertFalse(message.isEmpty)
-        let requested = repository.recordedLocations()
-        XCTAssertEqual(requested.count, 1)
-        XCTAssertEqual(requested.first?.name, "Ghaziabad")
+        let call = await forecastProviderSpy.lastCall()
+        XCTAssertEqual(call?.location, "New Delhi")
+        XCTAssertEqual(call?.days, 5)
     }
 }
 
-private let sampleWeather = WeatherNow(
-    temperatureC: 29.8,
-    conditionCode: 1000,
-    conditionSummary: "Clear",
-    conditionDescription: "clear sky"
-)
-
-private final class WeatherRepositoryStub: WeatherRepository, @unchecked Sendable {
-    private let result: Result<WeatherNow, Error>
-    private var locations: [Location] = []
-
-    init(result: Result<WeatherNow, Error>) {
-        self.result = result
-    }
-
-    func getCurrentWeather(for location: Location) async throws -> WeatherNow {
-        locations.append(location)
-        return try result.get()
-    }
-
-    func recordedLocations() -> [Location] {
-        locations
-    }
-}
-
-private final class RepositoryFactorySpy {
+private final class CurrentWeatherFeatureBuilderSpy {
     private(set) var receivedInputs: [(apiKey: String, apiURL: String)] = []
-    private let repository: WeatherRepository
+    private let viewModelFactory: CurrentWeatherViewModelFactory
 
-    init(repository: WeatherRepository) {
-        self.repository = repository
+    init(viewModelFactory: @escaping CurrentWeatherViewModelFactory) {
+        self.viewModelFactory = viewModelFactory
     }
 
-    func make(apiKey: String, apiURL: String) -> WeatherRepository {
+    func make(apiKey: String, apiURL: String) -> CurrentWeatherViewModelFactory {
         receivedInputs.append((apiKey: apiKey, apiURL: apiURL))
-        return repository
+        return viewModelFactory
     }
 }
 
-private enum WeatherRepositoryStubError: Error {
-    case network
+private final class CurrentWeatherViewModelFactorySpy {
+    private let backingProvider: any CurrentWeatherFeatureProviding
+    private(set) var makeWeatherViewModelCallCount = 0
+
+    init(backingProvider: any CurrentWeatherFeatureProviding = CurrentWeatherFeatureFactory.live(
+        weatherAPIKey: "test-key",
+        weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+    )) {
+        self.backingProvider = backingProvider
+    }
+
+    @MainActor
+    func make() -> CurrentWeatherViewModel {
+        makeWeatherViewModelCallCount += 1
+        return backingProvider.makeWeatherViewModel()
+    }
+}
+
+private enum LiveWeatherTestRetainer {
+    static var retainedObjects: [AnyObject] = []
+
+    static func retain(_ object: AnyObject) {
+        retainedObjects.append(object)
+    }
+}
+
+private actor ForecastFeatureProviderSpy: ForecastFeatureProviding {
+    struct Call {
+        let location: String
+        let days: Int
+    }
+
+    private let stubbedDays: [ForecastDay]
+    private var calls: [Call] = []
+
+    init(stubbedDays: [ForecastDay]) {
+        self.stubbedDays = stubbedDays
+    }
+
+    func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
+        calls.append(Call(location: location, days: days))
+        return stubbedDays
+    }
+
+    func lastCall() -> Call? {
+        calls.last
+    }
 }
