@@ -15,9 +15,7 @@ struct LiveWeatherApp: App {
         WindowGroup {
             ContentView(
                 viewModel: container.makeWeatherViewModel(),
-                forecastLoader: {
-                    try await container.fetchDefaultForecast()
-                }
+                container: container
             )
         }
     }

@@ -10,26 +10,34 @@ import CurrentWeatherFeatureImpl
 import ForecastFeatureAPI
 import ForecastFeatureImpl
 import Foundation
+import SearchFeatureAPI
+import SearchFeatureImpl
 
+@MainActor
 final class AppContainer {
     typealias CurrentWeatherViewModelFactoryBuilder =
         (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
     typealias ForecastFeatureBuilder =
         (_ apiKey: String, _ apiURL: String) -> any ForecastFeatureProviding
+    typealias SearchFeatureBuilder = () -> any SearchFeatureProviding
 
     private let weatherViewModelFactory: CurrentWeatherViewModelFactory
     private let forecastProvider: any ForecastFeatureProviding
+    private let searchProvider: any SearchFeatureProviding
+    private var selectedLocation = "New Delhi"
 
     convenience init(
         currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
             CurrentWeatherFeatureFactory.liveViewModelFactory,
-        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live
+        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
+        searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live
     ) {
         self.init(
             weatherAPIKey: AppConfig.weatherAPIKey,
             weatherAPIURL: AppConfig.weatherAPIUrl,
             currentWeatherFeatureBuilder: currentWeatherFeatureBuilder,
-            forecastFeatureBuilder: forecastFeatureBuilder
+            forecastFeatureBuilder: forecastFeatureBuilder,
+            searchFeatureBuilder: searchFeatureBuilder
         )
     }
 
@@ -38,7 +46,8 @@ final class AppContainer {
         weatherAPIURL: String,
         currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
             CurrentWeatherFeatureFactory.liveViewModelFactory,
-        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live
+        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
+        searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live
     ) {
         #if DEV
             print("DEV")
@@ -49,6 +58,7 @@ final class AppContainer {
         #endif
         weatherViewModelFactory = currentWeatherFeatureBuilder(weatherAPIKey, weatherAPIURL)
         forecastProvider = forecastFeatureBuilder(weatherAPIKey, weatherAPIURL)
+        searchProvider = searchFeatureBuilder()
     }
 
     func makeWeatherViewModel() -> CurrentWeatherViewModel {
@@ -56,6 +66,16 @@ final class AppContainer {
     }
 
     func fetchDefaultForecast() async throws -> [ForecastDay] {
-        try await forecastProvider.fetchForecast(location: "New Delhi", days: 5)
+        let safeLocation = String(selectedLocation)
+        return try await forecastProvider.fetchForecast(location: safeLocation, days: 5)
+    }
+
+    func searchLocations(query: String) async throws -> [SearchLocation] {
+        let safeQuery = String(query)
+        return try await searchProvider.search(query: safeQuery)
+    }
+
+    func selectLocation(_ location: String) {
+        selectedLocation = location
     }
 }
