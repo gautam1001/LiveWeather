@@ -182,7 +182,7 @@ private enum LiveWeatherTestRetainer {
 }
 
 private actor ForecastFeatureProviderSpy: ForecastFeatureProviding {
-    struct Call: Sendable {
+    struct Call {
         let location: String
         let days: Int
     }
