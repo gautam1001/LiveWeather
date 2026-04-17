@@ -7,6 +7,7 @@
 
 import CurrentWeatherFeatureAPI
 import CurrentWeatherFeatureImpl
+import ForecastFeatureAPI
 @testable import LiveWeather
 import XCTest
 
@@ -104,6 +105,40 @@ final class LiveWeatherTests: XCTestCase {
 
         XCTAssertEqual(factorySpy.makeWeatherViewModelCallCount, 2)
     }
+
+    @MainActor
+    func testAppContainerFetchDefaultForecastUsesExpectedLocationAndDays() async throws {
+        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
+            weatherAPIKey: "test-key",
+            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+        )
+        let forecastProviderSpy = ForecastFeatureProviderSpy(
+            stubbedDays: [ForecastDay(dateLabel: "Fri, 11 Apr", temperatureC: 31, summary: "Sunny")]
+        )
+
+        let container = AppContainer(
+            weatherAPIKey: "test-key",
+            weatherAPIURL: "https://example.com/v1/current.json",
+            currentWeatherFeatureBuilder: { _, _ in
+                {
+                    currentWeatherProvider.makeWeatherViewModel()
+                }
+            },
+            forecastFeatureBuilder: { _, _ in
+                forecastProviderSpy
+            }
+        )
+        LiveWeatherTestRetainer.retain(container)
+
+        let forecast = try await container.fetchDefaultForecast()
+
+        XCTAssertEqual(forecast.count, 1)
+        XCTAssertEqual(forecast.first?.summary, "Sunny")
+
+        let call = await forecastProviderSpy.lastCall()
+        XCTAssertEqual(call?.location, "New Delhi")
+        XCTAssertEqual(call?.days, 5)
+    }
 }
 
 private final class CurrentWeatherFeatureBuilderSpy {
@@ -143,5 +178,28 @@ private enum LiveWeatherTestRetainer {
 
     static func retain(_ object: AnyObject) {
         retainedObjects.append(object)
+    }
+}
+
+private actor ForecastFeatureProviderSpy: ForecastFeatureProviding {
+    struct Call: Sendable {
+        let location: String
+        let days: Int
+    }
+
+    private let stubbedDays: [ForecastDay]
+    private var calls: [Call] = []
+
+    init(stubbedDays: [ForecastDay]) {
+        self.stubbedDays = stubbedDays
+    }
+
+    func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
+        calls.append(Call(location: location, days: days))
+        return stubbedDays
+    }
+
+    func lastCall() -> Call? {
+        calls.last
     }
 }
