@@ -7,11 +7,10 @@
 
 import CurrentWeatherFeatureAPI
 import ForecastFeatureAPI
+import SearchFeatureAPI
 import SwiftUI
 
 struct ContentView: View {
-    typealias ForecastLoader = () async throws -> [ForecastDay]
-
     private enum ForecastState {
         case idle
         case loading
@@ -19,21 +18,28 @@ struct ContentView: View {
         case failed(String)
     }
 
-    private let locationName = "New Delhi"
-
     @StateObject private var viewModel: CurrentWeatherViewModel
-    let forecastLoader: ForecastLoader
-    @State private var forecastState: ForecastState = .idle
+    private let container: AppContainer
 
-    init(viewModel: CurrentWeatherViewModel, forecastLoader: @escaping ForecastLoader) {
+    @State private var selectedLocation = "New Delhi"
+    @State private var forecastState: ForecastState = .idle
+    @State private var searchQuery = ""
+    @State private var isSearching = false
+    @State private var searchErrorMessage: String?
+
+    init(
+        viewModel: CurrentWeatherViewModel,
+        container: AppContainer
+    ) {
         _viewModel = StateObject(wrappedValue: viewModel)
-        self.forecastLoader = forecastLoader
+        self.container = container
     }
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 18) {
+                    searchSection
                     currentWeatherSection
                     forecastSection
                 }
@@ -56,18 +62,93 @@ struct ContentView: View {
             }
         }
     }
+}
+
+private extension ContentView {
+    var searchSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Search Location")
+                .font(.headline)
+
+            HStack(spacing: 10) {
+                TextField("Enter city name", text: $searchQuery)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled()
+                    .padding(10)
+                    .background(
+                        Color.white.opacity(0.9),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                    .onSubmit {
+                        Task {
+                            await performSearch()
+                        }
+                    }
+
+                Button {
+                    Task {
+                        await performSearch()
+                    }
+                } label: {
+                    if isSearching {
+                        ProgressView()
+                            .tint(.white)
+                            .padding(.horizontal, 8)
+                    } else {
+                        Text("Search")
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(isSearching)
+            }
+
+            if let searchErrorMessage {
+                Text(searchErrorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
 
     @MainActor
-    private func loadWeather() async {
-        await viewModel.loadWeather(for: locationName)
+    func performSearch() async {
+        let trimmedQuery = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else {
+            searchErrorMessage = nil
+            return
+        }
+
+        isSearching = true
+        searchErrorMessage = nil
+        do {
+            let safeQuery = String(trimmedQuery)
+            let results = try await container.searchLocations(query: safeQuery)
+            let resolvedLocation = results.first?.name ?? safeQuery
+            selectedLocation = resolvedLocation
+            searchQuery = resolvedLocation
+            await loadWeather()
+        } catch {
+            searchErrorMessage = error.localizedDescription
+        }
+        isSearching = false
+    }
+
+    @MainActor
+    func loadWeather() async {
+        container.selectLocation(selectedLocation)
+        await viewModel.loadWeather(for: selectedLocation)
         await loadForecast()
     }
 
     @MainActor
-    private func loadForecast() async {
+    func loadForecast() async {
         forecastState = .loading
         do {
-            let days = try await forecastLoader()
+            let days = try await container.fetchDefaultForecast()
             forecastState = .loaded(days)
         } catch {
             forecastState = .failed(error.localizedDescription)
@@ -75,7 +156,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder
-    private var currentWeatherSection: some View {
+    var currentWeatherSection: some View {
         let state = viewModel.screenState
 
         switch state {
@@ -91,7 +172,7 @@ struct ContentView: View {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         case let .failed(message):
             VStack(alignment: .leading, spacing: 8) {
-                Text(locationName)
+                Text(selectedLocation)
                     .font(.title2.weight(.semibold))
                 Text("Current weather unavailable")
                     .font(.headline)
@@ -104,7 +185,7 @@ struct ContentView: View {
             .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         case let .loaded(current):
             VStack(alignment: .leading, spacing: 12) {
-                Text(locationName)
+                Text(selectedLocation)
                     .font(.title2.weight(.semibold))
                     .foregroundStyle(.secondary)
 
@@ -129,7 +210,7 @@ struct ContentView: View {
         }
     }
 
-    private var forecastSection: some View {
+    var forecastSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("5-Day Forecast")
                 .font(.headline)
@@ -175,7 +256,7 @@ struct ContentView: View {
         .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private func symbolName(for summary: String) -> String {
+    func symbolName(for summary: String) -> String {
         let lower = summary.lowercased()
         if lower.contains("sun") {
             return "sun.max.fill"
@@ -191,16 +272,9 @@ struct ContentView: View {
 }
 
 #Preview {
+    let previewContainer = AppContainer()
     ContentView(
-        viewModel: AppContainer().makeWeatherViewModel(),
-        forecastLoader: {
-            [
-                ForecastDay(dateLabel: "Day 1", temperatureC: 27, summary: "Sunny"),
-                ForecastDay(dateLabel: "Day 2", temperatureC: 26, summary: "Cloudy"),
-                ForecastDay(dateLabel: "Day 3", temperatureC: 28, summary: "Sunny"),
-                ForecastDay(dateLabel: "Day 4", temperatureC: 25, summary: "Rain"),
-                ForecastDay(dateLabel: "Day 5", temperatureC: 27, summary: "Sunny"),
-            ]
-        }
+        viewModel: previewContainer.makeWeatherViewModel(),
+        container: previewContainer
     )
 }

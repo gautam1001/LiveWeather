@@ -8,6 +8,6 @@ public struct SearchLocation: Equatable, Sendable {
     }
 }
 
-public protocol SearchFeatureProviding {
+public protocol SearchFeatureProviding: Sendable {
     func search(query: String) async throws -> [SearchLocation]
 }

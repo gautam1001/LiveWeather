@@ -1,7 +1,7 @@
 import Foundation
 import SearchFeatureAPI
 
-public final class LiveSearchFeatureProvider {
+public actor LiveSearchFeatureProvider {
     private let service: LiveSearchFeatureService
 
     public init(service: LiveSearchFeatureService = LiveSearchFeatureService()) {
@@ -9,7 +9,8 @@ public final class LiveSearchFeatureProvider {
     }
 
     public func search(query: String) async throws -> [SearchLocation] {
-        let locations = try await service.search(query: query)
+        let safeQuery = String(query)
+        let locations = try service.search(query: safeQuery)
         return locations.map(SearchLocation.init(name:))
     }
 }
