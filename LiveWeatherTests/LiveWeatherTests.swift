@@ -8,8 +8,8 @@
 import CurrentWeatherFeatureAPI
 import CurrentWeatherFeatureImpl
 import ForecastFeatureAPI
-import SearchFeatureAPI
 @testable import LiveWeather
+import SearchFeatureAPI
 import XCTest
 
 final class LiveWeatherTests: XCTestCase {
