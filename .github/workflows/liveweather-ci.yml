@@ -242,6 +242,10 @@ jobs:
           swift test --package-path Packages/Domain 2>&1 | tee -a TestResults/package-tests.log
           swift test --package-path Packages/Data 2>&1 | tee -a TestResults/package-tests.log
           swift test --package-path Packages/Presentation 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Features/CurrentWeatherFeature 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Features/SearchFeature 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Features/ForecastFeature 2>&1 | tee -a TestResults/package-tests.log
+          swift test --package-path Packages/Features/WeatherHomeFeature 2>&1 | tee -a TestResults/package-tests.log
 
       - name: Upload package test artifacts
         if: always()

@@ -13,7 +13,7 @@ struct LiveWeatherApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(viewModel: container.makeWeatherViewModel())
+            ContentView(viewModel: container.makeWeatherHomeViewModel())
         }
     }
 }

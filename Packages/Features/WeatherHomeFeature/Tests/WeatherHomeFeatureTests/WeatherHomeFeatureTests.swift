@@ -1,0 +1,248 @@
+import CurrentWeatherFeatureAPI
+import ForecastFeatureAPI
+import SearchFeatureAPI
+import WeatherHomeFeatureAPI
+import WeatherHomeFeatureImpl
+import XCTest
+
+@MainActor
+final class WeatherHomeFeatureTests: XCTestCase {
+    func testOnAppearLoadsCurrentWeatherAndForecastForInitialLocation() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "New Delhi": .loaded(
+                    CurrentWeatherDisplay(
+                        conditionSummary: "Sunny",
+                        temperatureC: 31
+                    )
+                ),
+            ]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [
+                ForecastDay(dateLabel: "Fri, 11 Apr", temperatureC: 31, summary: "Sunny"),
+            ]
+        )
+        let searchSpy = SearchProviderSpy(stubbedResults: [SearchLocation(name: "New Delhi")])
+
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        await viewModel.onAppear()
+
+        let loadedLocations = await currentWeatherSpy.loadedLocations()
+        XCTAssertEqual(loadedLocations, ["New Delhi"])
+        XCTAssertEqual(viewModel.state.selectedLocation, "New Delhi")
+        XCTAssertEqual(viewModel.state.searchQuery, "New Delhi")
+        XCTAssertEqual(
+            viewModel.state.currentWeatherState,
+            .loaded(CurrentWeatherDisplay(conditionSummary: "Sunny", temperatureC: 31))
+        )
+        if case let .loaded(days) = viewModel.state.forecastState {
+            XCTAssertEqual(days.count, 1)
+            XCTAssertEqual(days.first?.summary, "Sunny")
+        } else {
+            XCTFail("Expected forecast loaded state")
+        }
+
+        let call = await forecastSpy.lastCall()
+        XCTAssertEqual(call?.location, "New Delhi")
+        XCTAssertEqual(call?.days, 5)
+    }
+
+    func testOnAppearLoadsOnlyOnce() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "New Delhi": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Clear", temperatureC: 26)
+                ),
+            ]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [ForecastDay(dateLabel: "Sat, 12 Apr", temperatureC: 26, summary: "Clear")]
+        )
+        let searchSpy = SearchProviderSpy(stubbedResults: [])
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        await viewModel.onAppear()
+        await viewModel.onAppear()
+
+        let loadedLocations = await currentWeatherSpy.loadedLocations()
+        XCTAssertEqual(loadedLocations.count, 1)
+        let callCount = await forecastSpy.callCount()
+        XCTAssertEqual(callCount, 1)
+    }
+
+    func testPerformSearchSuccessUpdatesLocationAndRefreshesStates() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "New Delhi": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Clear", temperatureC: 25)
+                ),
+                "Pune": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Cloudy", temperatureC: 28)
+                ),
+            ]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [ForecastDay(dateLabel: "Sun, 13 Apr", temperatureC: 28, summary: "Cloudy")]
+        )
+        let searchSpy = SearchProviderSpy(stubbedResults: [SearchLocation(name: "Pune")])
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        viewModel.updateSearchQuery("  Pune ")
+        await viewModel.performSearch()
+
+        XCTAssertEqual(viewModel.state.selectedLocation, "Pune")
+        XCTAssertEqual(viewModel.state.searchQuery, "Pune")
+        XCTAssertFalse(viewModel.state.isSearching)
+        XCTAssertNil(viewModel.state.searchErrorMessage)
+        let loadedLocations = await currentWeatherSpy.loadedLocations()
+        XCTAssertEqual(loadedLocations.last, "Pune")
+        let query = await searchSpy.lastQuery()
+        XCTAssertEqual(query, "Pune")
+    }
+
+    func testPerformSearchFailureShowsErrorAndSkipsRefresh() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(stateByLocation: [:])
+        let forecastSpy = ForecastProviderSpy(stubbedDays: [])
+        let searchSpy = SearchProviderSpy(
+            stubbedResults: [],
+            stubbedError: SearchProviderTestError.expected
+        )
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        viewModel.updateSearchQuery("error")
+        await viewModel.performSearch()
+
+        XCTAssertFalse(viewModel.state.isSearching)
+        XCTAssertNotNil(viewModel.state.searchErrorMessage)
+        let loadedLocations = await currentWeatherSpy.loadedLocations()
+        XCTAssertEqual(loadedLocations.count, 0)
+        let forecastCalls = await forecastSpy.callCount()
+        XCTAssertEqual(forecastCalls, 0)
+    }
+
+    func testSelectLocationRefreshesCurrentWeatherAndForecast() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "Mumbai": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Rain", temperatureC: 24)
+                ),
+            ]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [ForecastDay(dateLabel: "Mon, 14 Apr", temperatureC: 24, summary: "Rain")]
+        )
+        let searchSpy = SearchProviderSpy(stubbedResults: [])
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        await viewModel.selectLocation("Mumbai")
+
+        XCTAssertEqual(viewModel.state.selectedLocation, "Mumbai")
+        XCTAssertEqual(viewModel.state.searchQuery, "Mumbai")
+        let loadedLocations = await currentWeatherSpy.loadedLocations()
+        XCTAssertEqual(loadedLocations, ["Mumbai"])
+        let call = await forecastSpy.lastCall()
+        XCTAssertEqual(call?.location, "Mumbai")
+    }
+}
+
+private actor CurrentWeatherFeatureSpy: WeatherHomeCurrentWeatherFeature {
+    private let stateByLocation: [String: CurrentWeatherScreenState]
+    private var loadedLocationsStore: [String] = []
+
+    init(stateByLocation: [String: CurrentWeatherScreenState]) {
+        self.stateByLocation = stateByLocation
+    }
+
+    func fetchCurrentWeatherState(for location: String) async -> CurrentWeatherScreenState {
+        loadedLocationsStore.append(location)
+        if let next = stateByLocation[location] {
+            return next
+        }
+        return .failed("No stub for \(location)")
+    }
+
+    func loadedLocations() -> [String] {
+        loadedLocationsStore
+    }
+}
+
+private enum SearchProviderTestError: Error {
+    case expected
+}
+
+private actor SearchProviderSpy: SearchFeatureProviding {
+    private let stubbedResults: [SearchLocation]
+    private let stubbedError: Error?
+    private var queries: [String] = []
+
+    init(stubbedResults: [SearchLocation], stubbedError: Error? = nil) {
+        self.stubbedResults = stubbedResults
+        self.stubbedError = stubbedError
+    }
+
+    func search(query: String) async throws -> [SearchLocation] {
+        queries.append(query)
+        if let stubbedError {
+            throw stubbedError
+        }
+        return stubbedResults
+    }
+
+    func lastQuery() -> String? {
+        queries.last
+    }
+}
+
+private actor ForecastProviderSpy: ForecastFeatureProviding {
+    struct Call: Equatable {
+        let location: String
+        let days: Int
+    }
+
+    private let stubbedDays: [ForecastDay]
+    private let stubbedError: Error?
+    private var calls: [Call] = []
+
+    init(stubbedDays: [ForecastDay], stubbedError: Error? = nil) {
+        self.stubbedDays = stubbedDays
+        self.stubbedError = stubbedError
+    }
+
+    func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
+        calls.append(Call(location: location, days: days))
+        if let stubbedError {
+            throw stubbedError
+        }
+        return stubbedDays
+    }
+
+    func lastCall() -> Call? {
+        calls.last
+    }
+
+    func callCount() -> Int {
+        calls.count
+    }
+}

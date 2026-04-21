@@ -5,29 +5,59 @@
 //  Created by Prashant Gautam on 21/03/26.
 //
 
-import Data
-import Domain
+import CurrentWeatherFeatureAPI
+import CurrentWeatherFeatureImpl
+import ForecastFeatureAPI
+import ForecastFeatureImpl
 import Foundation
-import Presentation
+import SearchFeatureAPI
+import SearchFeatureImpl
+import WeatherHomeFeatureAPI
+import WeatherHomeFeatureImpl
 
-@MainActor
 final class AppContainer {
-    typealias WeatherRepositoryFactory = (_ apiKey: String, _ apiURL: String) -> WeatherRepository
+    typealias CurrentWeatherViewModelFactoryBuilder =
+        (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
+    typealias ForecastFeatureBuilder =
+        (_ apiKey: String, _ apiURL: String) -> any ForecastFeatureProviding
+    typealias SearchFeatureBuilder = () -> any SearchFeatureProviding
+    typealias WeatherHomeFeatureBuilder =
+        @MainActor (
+            _ currentWeatherViewModelFactory: @escaping CurrentWeatherViewModelFactory,
+            _ forecastProvider: any ForecastFeatureProviding,
+            _ searchProvider: any SearchFeatureProviding
+        ) -> LiveWeatherHomeScreenViewModel
 
-    private let repository: WeatherRepository
+    private let weatherViewModelFactory: CurrentWeatherViewModelFactory
+    private let weatherHomeViewModelFactory: @MainActor () -> LiveWeatherHomeScreenViewModel
 
-    convenience init(repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory) {
+    convenience init(
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
+            CurrentWeatherFeatureFactory.liveViewModelFactory,
+        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
+        searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live,
+        weatherHomeFeatureBuilder: @escaping WeatherHomeFeatureBuilder =
+            AppContainer.defaultWeatherHomeFeatureBuilder
+    ) {
         self.init(
             weatherAPIKey: AppConfig.weatherAPIKey,
             weatherAPIURL: AppConfig.weatherAPIUrl,
-            repositoryFactory: repositoryFactory
+            currentWeatherFeatureBuilder: currentWeatherFeatureBuilder,
+            forecastFeatureBuilder: forecastFeatureBuilder,
+            searchFeatureBuilder: searchFeatureBuilder,
+            weatherHomeFeatureBuilder: weatherHomeFeatureBuilder
         )
     }
 
     init(
         weatherAPIKey: String,
         weatherAPIURL: String,
-        repositoryFactory: WeatherRepositoryFactory = AppContainer.liveRepositoryFactory
+        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
+            CurrentWeatherFeatureFactory.liveViewModelFactory,
+        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
+        searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live,
+        weatherHomeFeatureBuilder: @escaping WeatherHomeFeatureBuilder =
+            AppContainer.defaultWeatherHomeFeatureBuilder
     ) {
         #if DEV
             print("DEV")
@@ -36,17 +66,36 @@ final class AppContainer {
         #elseif PROD
             print("PRODUCTION")
         #endif
-        repository = repositoryFactory(weatherAPIKey, weatherAPIURL)
+        let currentWeatherFactory = currentWeatherFeatureBuilder(weatherAPIKey, weatherAPIURL)
+        let forecastProvider = forecastFeatureBuilder(weatherAPIKey, weatherAPIURL)
+        let searchProvider = searchFeatureBuilder()
+        weatherViewModelFactory = currentWeatherFactory
+        weatherHomeViewModelFactory = {
+            weatherHomeFeatureBuilder(currentWeatherFactory, forecastProvider, searchProvider)
+        }
     }
 
-    func makeWeatherViewModel() -> WeatherOverviewViewModel {
-        WeatherOverviewViewModel(usecase: CurrentWeatherUsecase(repository: repository))
+    func makeWeatherViewModel() -> CurrentWeatherViewModel {
+        weatherViewModelFactory()
     }
 
-    private nonisolated static func liveRepositoryFactory(apiKey: String, apiURL: String) -> WeatherRepository {
-        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apiKey, apiUrl: apiURL)
-        let client = URLSessionHTTPClient(session: URLSession.shared)
-        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
-        return WeatherRemoteRepository(dataSource: dataSource)
+    @MainActor
+    func makeWeatherHomeViewModel() -> LiveWeatherHomeScreenViewModel {
+        weatherHomeViewModelFactory()
+    }
+}
+
+@MainActor
+private extension AppContainer {
+    static func defaultWeatherHomeFeatureBuilder(
+        currentWeatherViewModelFactory: @escaping CurrentWeatherViewModelFactory,
+        forecastProvider: any ForecastFeatureProviding,
+        searchProvider: any SearchFeatureProviding
+    ) -> LiveWeatherHomeScreenViewModel {
+        WeatherHomeFeatureFactory.live(
+            currentWeatherViewModelFactory: currentWeatherViewModelFactory,
+            forecastProvider: forecastProvider,
+            searchProvider: searchProvider
+        )
     }
 }

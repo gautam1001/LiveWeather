@@ -11,7 +11,7 @@ import Foundation
 public struct WeatherAPIMapper: Sendable {
     public init() {}
 
-    public func mapCurrent(_ dto: ForecastResponseDTO) throws -> WeatherNow {
+    public func mapCurrent(_ dto: CurrentWeatherResponseDTO) throws -> WeatherNow {
         WeatherNow(
             temperatureC: dto.current.tempC,
             conditionCode: dto.current.condition.code,

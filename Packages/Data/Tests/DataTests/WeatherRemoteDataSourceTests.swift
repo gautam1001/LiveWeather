@@ -36,13 +36,14 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: "12345", apiUrl: baseUrlString)
         let weatherData = try FixtureLoader.loadData(named: "weatherapi_sample")
 
-        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil)
+        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 400, httpVersion: nil, headerFields: nil)
         let response = try XCTUnwrap(httpResponse)
         let client = URLSessionHTTPClientMock(data: weatherData, response: response)
         let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
         do {
             _ = try await datasource.fetchWeather(for: location)
+            XCTFail("Expected request to fail with HTTP status error")
         } catch {
             XCTAssertNotNil(error)
             if let weatherAPIError = error as? WeatherAPIError {
@@ -62,6 +63,7 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
         do {
             _ = try await datasource.fetchWeather(for: location)
+            XCTFail("Expected request to fail with decoding error")
         } catch {
             XCTAssertNotNil(error)
             if let weatherAPIError = error as? WeatherAPIError {
@@ -78,6 +80,7 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
         do {
             _ = try await datasource.fetchWeather(for: location)
+            XCTFail("Expected request to fail with invalid response error")
         } catch {
             XCTAssertNotNil(error)
             if let weatherAPIError = error as? WeatherAPIError {
@@ -85,18 +88,40 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
             }
         }
     }
+
+    func testFetchForecastUsesForecastEndpointAndRequestedDays() async throws {
+        let baseUrlString = "https://api.weatherapi.com/v1/current.json"
+        let config = WeatherAPIConfig.weatherAPIDefault(apiKey: "12345", apiUrl: baseUrlString)
+        let weatherData = try FixtureLoader.loadData(named: "weatherapi_sample")
+        let httpResponse = HTTPURLResponse(url: config.baseURL, statusCode: 200, httpVersion: nil, headerFields: nil)
+        let response = try XCTUnwrap(httpResponse)
+        let client = URLSessionHTTPClientMock(data: weatherData, response: response)
+        let datasource = WeatherAPIRemoteDataSource(client: client, config: config)
+
+        let dto = try await datasource.fetchForecast(for: "New Delhi", days: 5)
+
+        XCTAssertEqual(dto.forecast.forecastDay.count, 2)
+        let requestedURLValue = await client.requestedURL
+        let requestedURL = try XCTUnwrap(requestedURLValue)
+        let components = try XCTUnwrap(URLComponents(url: requestedURL, resolvingAgainstBaseURL: false))
+        XCTAssertTrue(components.path.hasSuffix("/forecast.json"))
+        XCTAssertEqual(components.queryItems?.first(where: { $0.name == "days" })?.value, "5")
+        XCTAssertEqual(components.queryItems?.first(where: { $0.name == "q" })?.value, "New Delhi")
+    }
 }
 
-final class URLSessionHTTPClientMock: HTTPClient {
+actor URLSessionHTTPClientMock: HTTPClient {
     private let data: Data
     private let response: HTTPURLResponse?
+    private(set) var requestedURL: URL?
 
     init(data: Data, response: HTTPURLResponse?) {
         self.data = data
         self.response = response
     }
 
-    func get(url _: URL) async throws -> (Data, HTTPURLResponse) {
+    func get(url: URL) async throws -> (Data, HTTPURLResponse) {
+        requestedURL = url
         guard let httpResponse = response else {
             throw WeatherAPIError.invalidResponse
         }
