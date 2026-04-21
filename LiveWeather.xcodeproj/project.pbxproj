@@ -13,6 +13,8 @@
 		49A100042F80000100AA0001 /* CurrentWeatherFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100142F80000100AA0001 /* CurrentWeatherFeatureImpl */; };
 		49A100052F80000100AA0001 /* SearchFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100152F80000100AA0001 /* SearchFeatureImpl */; };
 		49A100062F80000100AA0001 /* ForecastFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49A100162F80000100AA0001 /* ForecastFeatureImpl */; };
+		49B200012F90000100AA0001 /* WeatherHomeFeatureAPI in Frameworks */ = {isa = PBXBuildFile; productRef = 49B200112F90000100AA0001 /* WeatherHomeFeatureAPI */; };
+		49B200022F90000100AA0001 /* WeatherHomeFeatureImpl in Frameworks */ = {isa = PBXBuildFile; productRef = 49B200122F90000100AA0001 /* WeatherHomeFeatureImpl */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -84,6 +86,8 @@
 				49A100052F80000100AA0001 /* SearchFeatureImpl in Frameworks */,
 				49A100032F80000100AA0001 /* ForecastFeatureAPI in Frameworks */,
 				49A100062F80000100AA0001 /* ForecastFeatureImpl in Frameworks */,
+				49B200012F90000100AA0001 /* WeatherHomeFeatureAPI in Frameworks */,
+				49B200022F90000100AA0001 /* WeatherHomeFeatureImpl in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -158,6 +162,8 @@
 				49A100152F80000100AA0001 /* SearchFeatureImpl */,
 				49A100132F80000100AA0001 /* ForecastFeatureAPI */,
 				49A100162F80000100AA0001 /* ForecastFeatureImpl */,
+				49B200112F90000100AA0001 /* WeatherHomeFeatureAPI */,
+				49B200122F90000100AA0001 /* WeatherHomeFeatureImpl */,
 			);
 			productName = LiveWeather;
 			productReference = 48BF885B2F6D9842009A4646 /* LiveWeather.app */;
@@ -248,6 +254,7 @@
 				49A100A12F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/CurrentWeatherFeature" */,
 				49A100A22F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/SearchFeature" */,
 				49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */,
+				49B200A12F90000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/WeatherHomeFeature" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 48BF885C2F6D9842009A4646 /* Products */;
@@ -1065,6 +1072,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Features/ForecastFeature;
 		};
+		49B200A12F90000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/WeatherHomeFeature" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Features/WeatherHomeFeature;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1097,6 +1108,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 49A100A32F80000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/ForecastFeature" */;
 			productName = ForecastFeatureImpl;
+		};
+		49B200112F90000100AA0001 /* WeatherHomeFeatureAPI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49B200A12F90000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/WeatherHomeFeature" */;
+			productName = WeatherHomeFeatureAPI;
+		};
+		49B200122F90000100AA0001 /* WeatherHomeFeatureImpl */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49B200A12F90000100AA0001 /* XCLocalSwiftPackageReference "Packages/Features/WeatherHomeFeature" */;
+			productName = WeatherHomeFeatureImpl;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
