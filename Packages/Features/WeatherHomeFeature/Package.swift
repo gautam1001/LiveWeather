@@ -5,7 +5,7 @@ let package = Package(
     name: "WeatherHomeFeature",
     platforms: [
         .iOS(.v15),
-        .macOS(.v12)
+        .macOS(.v12),
     ],
     products: [
         .library(
