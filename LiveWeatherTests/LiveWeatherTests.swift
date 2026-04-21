@@ -10,6 +10,7 @@ import CurrentWeatherFeatureImpl
 import ForecastFeatureAPI
 @testable import LiveWeather
 import SearchFeatureAPI
+import WeatherHomeFeatureImpl
 import XCTest
 
 final class LiveWeatherTests: XCTestCase {
@@ -108,14 +109,14 @@ final class LiveWeatherTests: XCTestCase {
     }
 
     @MainActor
-    func testAppContainerFetchDefaultForecastUsesExpectedLocationAndDays() async throws {
+    func testAppContainerBuildsWeatherHomeFeatureFromInjectedDependencies() {
         let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
         )
-        let forecastProviderSpy = ForecastFeatureProviderSpy(
-            stubbedDays: [ForecastDay(dateLabel: "Fri, 11 Apr", temperatureC: 31, summary: "Sunny")]
-        )
+        let forecastProviderSpy = ForecastFeatureProviderSpy(stubbedDays: [])
+        let searchProviderSpy = SearchFeatureProviderSpy(stubbedResults: [])
+        let weatherHomeBuilderSpy = WeatherHomeFeatureBuilderSpy()
 
         let container = AppContainer(
             weatherAPIKey: "test-key",
@@ -127,97 +128,34 @@ final class LiveWeatherTests: XCTestCase {
             },
             forecastFeatureBuilder: { _, _ in
                 forecastProviderSpy
-            }
-        )
-        LiveWeatherTestRetainer.retain(container)
-
-        let forecast = try await container.fetchDefaultForecast()
-
-        XCTAssertEqual(forecast.count, 1)
-        XCTAssertEqual(forecast.first?.summary, "Sunny")
-
-        let call = await forecastProviderSpy.lastCall()
-        XCTAssertEqual(call?.location, "New Delhi")
-        XCTAssertEqual(call?.days, 5)
-    }
-
-    @MainActor
-    func testAppContainerSearchLocationsDelegatesQueryAndReturnsResults() async throws {
-        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
-        )
-        let searchProviderSpy = SearchFeatureProviderSpy(
-            stubbedResults: [
-                SearchLocation(name: "Noida"),
-                SearchLocation(name: "Noida Extension"),
-            ]
-        )
-
-        let container = AppContainer(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://example.com/v1/current.json",
-            currentWeatherFeatureBuilder: { _, _ in
-                {
-                    currentWeatherProvider.makeWeatherViewModel()
-                }
             },
             searchFeatureBuilder: {
                 searchProviderSpy
-            }
-        )
-        LiveWeatherTestRetainer.retain(container)
-
-        let results = try await container.searchLocations(query: "  noida  ")
-
-        XCTAssertEqual(results, [
-            SearchLocation(name: "Noida"),
-            SearchLocation(name: "Noida Extension"),
-        ])
-
-        let lastQuery = await searchProviderSpy.lastQuery()
-        XCTAssertEqual(lastQuery, "  noida  ")
-    }
-
-    @MainActor
-    func testAppContainerSearchLocationsPropagatesErrors() async {
-        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
-        )
-        let searchProviderSpy = SearchFeatureProviderSpy(
-            stubbedResults: [],
-            stubbedError: SearchProviderError.expected
-        )
-
-        let container = AppContainer(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://example.com/v1/current.json",
-            currentWeatherFeatureBuilder: { _, _ in
-                {
-                    currentWeatherProvider.makeWeatherViewModel()
-                }
             },
-            searchFeatureBuilder: {
-                searchProviderSpy
+            weatherHomeFeatureBuilder: { currentFactory, forecastProvider, searchProvider in
+                weatherHomeBuilderSpy.make(
+                    currentWeatherViewModelFactory: currentFactory,
+                    forecastProvider: forecastProvider,
+                    searchProvider: searchProvider
+                )
             }
         )
         LiveWeatherTestRetainer.retain(container)
+        LiveWeatherTestRetainer.retain(weatherHomeBuilderSpy)
 
-        await XCTAssertThrowsErrorAsync {
-            _ = try await container.searchLocations(query: "gurgaon")
-        }
+        _ = container.makeWeatherHomeViewModel()
+
+        XCTAssertEqual(weatherHomeBuilderSpy.makeCallCount, 1)
     }
 
     @MainActor
-    func testAppContainerFetchDefaultForecastUsesSelectedLocation() async throws {
+    func testAppContainerCreatesIndependentWeatherHomeViewModels() {
         let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
         )
-        let forecastProviderSpy = ForecastFeatureProviderSpy(
-            stubbedDays: [ForecastDay(dateLabel: "Sat, 12 Apr", temperatureC: 29, summary: "Cloudy")]
-        )
+        let forecastProviderSpy = ForecastFeatureProviderSpy(stubbedDays: [])
+        let searchProviderSpy = SearchFeatureProviderSpy(stubbedResults: [])
 
         let container = AppContainer(
             weatherAPIKey: "test-key",
@@ -229,16 +167,17 @@ final class LiveWeatherTests: XCTestCase {
             },
             forecastFeatureBuilder: { _, _ in
                 forecastProviderSpy
+            },
+            searchFeatureBuilder: {
+                searchProviderSpy
             }
         )
         LiveWeatherTestRetainer.retain(container)
 
-        container.selectLocation("Mumbai")
-        _ = try await container.fetchDefaultForecast()
+        let first = container.makeWeatherHomeViewModel()
+        let second = container.makeWeatherHomeViewModel()
 
-        let call = await forecastProviderSpy.lastCall()
-        XCTAssertEqual(call?.location, "Mumbai")
-        XCTAssertEqual(call?.days, 5)
+        XCTAssertFalse(first === second)
     }
 }
 
@@ -274,6 +213,24 @@ private final class CurrentWeatherViewModelFactorySpy {
     }
 }
 
+@MainActor
+private final class WeatherHomeFeatureBuilderSpy {
+    private(set) var makeCallCount = 0
+
+    func make(
+        currentWeatherViewModelFactory: @escaping CurrentWeatherViewModelFactory,
+        forecastProvider: any ForecastFeatureProviding,
+        searchProvider: any SearchFeatureProviding
+    ) -> LiveWeatherHomeScreenViewModel {
+        makeCallCount += 1
+        return LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherViewModelFactory(),
+            forecastProvider: forecastProvider,
+            searchProvider: searchProvider
+        )
+    }
+}
+
 private enum LiveWeatherTestRetainer {
     static var retainedObjects: [AnyObject] = []
 
@@ -283,30 +240,15 @@ private enum LiveWeatherTestRetainer {
 }
 
 private actor ForecastFeatureProviderSpy: ForecastFeatureProviding {
-    struct Call {
-        let location: String
-        let days: Int
-    }
-
     private let stubbedDays: [ForecastDay]
-    private var calls: [Call] = []
 
     init(stubbedDays: [ForecastDay]) {
         self.stubbedDays = stubbedDays
     }
 
-    func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
-        calls.append(Call(location: location, days: days))
-        return stubbedDays
+    func fetchForecast(location _: String, days _: Int) async throws -> [ForecastDay] {
+        stubbedDays
     }
-
-    func lastCall() -> Call? {
-        calls.last
-    }
-}
-
-private enum SearchProviderError: Error {
-    case expected
 }
 
 private actor SearchFeatureProviderSpy: SearchFeatureProviding {
@@ -330,15 +272,4 @@ private actor SearchFeatureProviderSpy: SearchFeatureProviding {
     func lastQuery() -> String? {
         queries.last
     }
-}
-
-private func XCTAssertThrowsErrorAsync(
-    _ expression: @escaping () async throws -> Void,
-    file: StaticString = #filePath,
-    line: UInt = #line
-) async {
-    do {
-        try await expression()
-        XCTFail("Expected error to be thrown", file: file, line: line)
-    } catch {}
 }

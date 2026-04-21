@@ -21,12 +21,12 @@ public enum CurrentWeatherScreenState: Equatable, Sendable {
 
 public typealias CurrentWeatherViewModelFactory = () -> CurrentWeatherViewModel
 
-@MainActor
 public extension CurrentWeatherViewModel {
     func loadWeather(for location: String) async {
         await load(for: location)
     }
 
+    @MainActor
     var screenState: CurrentWeatherScreenState {
         switch state {
         case .idle:

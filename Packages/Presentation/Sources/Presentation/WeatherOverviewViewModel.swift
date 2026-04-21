@@ -2,7 +2,7 @@ import Combine
 import Domain
 import Foundation
 
-public final class WeatherOverviewViewModel: ObservableObject {
+public final class WeatherOverviewViewModel: ObservableObject, @unchecked Sendable {
     @Published public private(set) var state: State = .idle
 
     private let useCase: CurrentWeatherUsecase
@@ -11,19 +11,30 @@ public final class WeatherOverviewViewModel: ObservableObject {
         useCase = usecase
     }
 
-    @MainActor
     public func load(for location: String) async {
-        state = .loading
+        await MainActor.run {
+            state = .loading
+        }
+
+        let requestedLocation = Location(
+            name: location,
+            coordinate: Coordinate(latitude: 28.644800, longitude: 77.216721)
+        )
+        let useCase = useCase
+
         do {
-            let location = Location(
-                name: location,
-                coordinate: Coordinate(latitude: 28.644800, longitude: 77.216721)
-            )
-            let current = try await useCase(location: location)
-            let overview = WeatherOverview(locationName: location.name, current: current)
-            state = .loaded(overview)
+            // Run repository/network work off the main actor and hop back only for UI state updates.
+            let current = try await Task.detached(priority: .userInitiated) {
+                try await useCase(location: requestedLocation)
+            }.value
+            let overview = WeatherOverview(locationName: requestedLocation.name, current: current)
+            await MainActor.run {
+                state = .loaded(overview)
+            }
         } catch {
-            state = .failed(error.localizedDescription)
+            await MainActor.run {
+                state = .failed(error.localizedDescription)
+            }
         }
     }
 }
