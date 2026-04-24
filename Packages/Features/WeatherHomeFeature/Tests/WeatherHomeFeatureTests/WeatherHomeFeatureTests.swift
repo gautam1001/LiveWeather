@@ -102,7 +102,8 @@ final class WeatherHomeFeatureTests: XCTestCase {
         )
 
         viewModel.updateSearchQuery("  Pune ")
-        await viewModel.performSearch()
+        viewModel.performSearch()
+        await waitForSearchToFinish(in: viewModel)
 
         XCTAssertEqual(viewModel.state.selectedLocation, "Pune")
         XCTAssertEqual(viewModel.state.searchQuery, "Pune")
@@ -128,7 +129,8 @@ final class WeatherHomeFeatureTests: XCTestCase {
         )
 
         viewModel.updateSearchQuery("error")
-        await viewModel.performSearch()
+        viewModel.performSearch()
+        await waitForSearchToFinish(in: viewModel)
 
         XCTAssertFalse(viewModel.state.isSearching)
         XCTAssertNotNil(viewModel.state.searchErrorMessage)
@@ -215,6 +217,52 @@ final class WeatherHomeFeatureTests: XCTestCase {
             XCTFail("Expected forecast loaded state")
         }
     }
+
+    func testPerformSearchCancelsPreviousInFlightTask() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "Pune": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Rain", temperatureC: 24)
+                ),
+                "Mumbai": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Sunny", temperatureC: 31)
+                ),
+            ]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [],
+            stubbedDaysByLocation: [
+                "Pune": [ForecastDay(dateLabel: "Tue, 15 Apr", temperatureC: 24, summary: "Rain")],
+                "Mumbai": [ForecastDay(dateLabel: "Tue, 15 Apr", temperatureC: 31, summary: "Sunny")],
+            ]
+        )
+        let searchSpy = SearchProviderSpy(
+            stubbedResults: [],
+            stubbedResultsByQuery: [
+                "Pune": [SearchLocation(name: "Pune")],
+                "Mumbai": [SearchLocation(name: "Mumbai")],
+            ],
+            delayByQuery: ["Pune": 200_000_000]
+        )
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        viewModel.updateSearchQuery("Pune")
+        viewModel.performSearch()
+        await Task.yield()
+
+        viewModel.updateSearchQuery("Mumbai")
+        viewModel.performSearch()
+        await waitForSearchToFinish(in: viewModel)
+
+        XCTAssertEqual(viewModel.state.selectedLocation, "Mumbai")
+        XCTAssertEqual(viewModel.state.searchQuery, "Mumbai")
+        let cancellationCount = await searchSpy.cancellationCount()
+        XCTAssertEqual(cancellationCount, 1)
+    }
 }
 
 private actor CurrentWeatherFeatureSpy: WeatherHomeCurrentWeatherFeature {
@@ -252,24 +300,46 @@ private enum SearchProviderTestError: Error {
 
 private actor SearchProviderSpy: SearchFeatureProviding {
     private let stubbedResults: [SearchLocation]
+    private let stubbedResultsByQuery: [String: [SearchLocation]]
     private let stubbedError: Error?
+    private let delayByQuery: [String: UInt64]
     private var queries: [String] = []
+    private var cancellationCountStore = 0
 
-    init(stubbedResults: [SearchLocation], stubbedError: Error? = nil) {
+    init(
+        stubbedResults: [SearchLocation],
+        stubbedResultsByQuery: [String: [SearchLocation]] = [:],
+        stubbedError: Error? = nil,
+        delayByQuery: [String: UInt64] = [:]
+    ) {
         self.stubbedResults = stubbedResults
+        self.stubbedResultsByQuery = stubbedResultsByQuery
         self.stubbedError = stubbedError
+        self.delayByQuery = delayByQuery
     }
 
     func search(query: String) async throws -> [SearchLocation] {
         queries.append(query)
+        do {
+            if let delay = delayByQuery[query] {
+                try await Task.sleep(nanoseconds: delay)
+            }
+        } catch is CancellationError {
+            cancellationCountStore += 1
+            throw CancellationError()
+        }
         if let stubbedError {
             throw stubbedError
         }
-        return stubbedResults
+        return stubbedResultsByQuery[query] ?? stubbedResults
     }
 
     func lastQuery() -> String? {
         queries.last
+    }
+
+    func cancellationCount() -> Int {
+        cancellationCountStore
     }
 }
 
@@ -314,5 +384,16 @@ private actor ForecastProviderSpy: ForecastFeatureProviding {
 
     func callCount() -> Int {
         calls.count
+    }
+}
+
+@MainActor
+private func waitForSearchToFinish(
+    in viewModel: LiveWeatherHomeScreenViewModel,
+    timeoutNanoseconds: UInt64 = 1_000_000_000
+) async {
+    let deadline = DispatchTime.now().uptimeNanoseconds + timeoutNanoseconds
+    while viewModel.state.isSearching, DispatchTime.now().uptimeNanoseconds < deadline {
+        try? await Task.sleep(nanoseconds: 10_000_000)
     }
 }

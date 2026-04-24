@@ -49,9 +49,14 @@ extension CurrentWeatherViewModel: WeatherHomeCurrentWeatherFeature {
 public protocol WeatherHomeScreenViewModeling: ObservableObject {
     @MainActor
     var state: WeatherHomeScreenState { get }
+    @MainActor
     func onAppear() async
     @MainActor
     func updateSearchQuery(_ query: String)
-    func performSearch() async
+    @MainActor
+    func performSearch()
+    @MainActor
+    func cancelSearch()
+    @MainActor
     func selectLocation(_ location: String) async
 }

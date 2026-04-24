@@ -12,7 +12,6 @@ import WeatherHomeFeatureAPI
 
 struct ContentView<ViewModel: WeatherHomeScreenViewModeling>: View {
     @StateObject private var viewModel: ViewModel
-    @State private var searchTask: Task<Void, Never>?
 
     init(viewModel: ViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -44,7 +43,7 @@ struct ContentView<ViewModel: WeatherHomeScreenViewModeling>: View {
                 await viewModel.onAppear()
             }
             .onDisappear {
-                searchTask?.cancel()
+                viewModel.cancelSearch()
             }
         }
     }
@@ -207,10 +206,7 @@ private extension ContentView {
     }
 
     func triggerSearch() {
-        searchTask?.cancel()
-        searchTask = Task {
-            await viewModel.performSearch()
-        }
+        viewModel.performSearch()
     }
 
     func symbolName(for summary: String) -> String {

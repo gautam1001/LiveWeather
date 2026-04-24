@@ -5,17 +5,19 @@ import Foundation
 import SearchFeatureAPI
 import WeatherHomeFeatureAPI
 
-@MainActor
 public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling {
-    @Published public private(set) var state: WeatherHomeScreenState
+    @MainActor @Published public private(set) var state: WeatherHomeScreenState
 
     private let currentWeatherViewModel: any WeatherHomeCurrentWeatherFeature
     private let forecastProvider: any ForecastFeatureProviding
     private let searchProvider: any SearchFeatureProviding
     private let forecastDays: Int
-    private var hasLoadedInitialData = false
-    private var requestSequence = 0
+    @MainActor private var hasLoadedInitialData = false
+    @MainActor private var requestSequence = 0
+    @MainActor private var activeSearchRequestID: Int?
+    @MainActor private var activeSearchTask: Task<Void, Never>?
 
+    @MainActor
     public init(
         currentWeatherViewModel: any WeatherHomeCurrentWeatherFeature,
         forecastProvider: any ForecastFeatureProviding,
@@ -33,6 +35,7 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
         )
     }
 
+    @MainActor
     public func onAppear() async {
         guard !hasLoadedInitialData else {
             return
@@ -42,51 +45,57 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
         await refreshWeather(for: requestID)
     }
 
+    @MainActor
     public func updateSearchQuery(_ query: String) {
         state.searchQuery = query
     }
 
-    public func performSearch() async {
+    @MainActor
+    public func performSearch() {
         let trimmedQuery = state.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
             state.searchErrorMessage = nil
             return
         }
 
+        cancelActiveSearch(resetSearchState: false)
         let requestID = beginRequest()
+        activeSearchRequestID = requestID
         state.isSearching = true
         state.searchErrorMessage = nil
-        defer {
-            if shouldFinishSearch(for: requestID) {
-                state.isSearching = false
+        let searchProvider = searchProvider
+        activeSearchTask = Task { [weak self, searchProvider] in
+            do {
+                let results = try await searchProvider.search(query: trimmedQuery)
+                await self?.applySearchResults(
+                    results,
+                    fallbackQuery: trimmedQuery,
+                    requestID: requestID
+                )
+            } catch is CancellationError {
+                await self?.finishSearchIfCurrent(requestID: requestID)
+                return
+            } catch {
+                await self?.applySearchFailure(error, requestID: requestID)
             }
-        }
 
-        do {
-            let results = try await searchProvider.search(query: trimmedQuery)
-            guard shouldApplyResult(for: requestID) else {
-                return
-            }
-            let resolvedLocation = results.first?.name ?? trimmedQuery
-            state.selectedLocation = resolvedLocation
-            state.searchQuery = resolvedLocation
-            await refreshWeather(for: requestID)
-        } catch is CancellationError {
-            return
-        } catch {
-            guard shouldApplyResult(for: requestID) else {
-                return
-            }
-            state.searchErrorMessage = error.localizedDescription
+            await self?.finishSearchIfCurrent(requestID: requestID)
         }
     }
 
+    @MainActor
+    public func cancelSearch() {
+        cancelActiveSearch(resetSearchState: true)
+    }
+
+    @MainActor
     public func selectLocation(_ location: String) async {
         let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedLocation.isEmpty else {
             return
         }
 
+        cancelActiveSearch(resetSearchState: true)
         let requestID = beginRequest()
         state.selectedLocation = trimmedLocation
         state.searchQuery = trimmedLocation
@@ -96,11 +105,13 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
 }
 
 private extension LiveWeatherHomeScreenViewModel {
+    @MainActor
     func beginRequest() -> Int {
         requestSequence += 1
         return requestSequence
     }
 
+    @MainActor
     func shouldApplyResult(for requestID: Int, location: String? = nil) -> Bool {
         guard requestID == requestSequence, !Task.isCancelled else {
             return false
@@ -112,17 +123,66 @@ private extension LiveWeatherHomeScreenViewModel {
         return state.selectedLocation == location
     }
 
-    func shouldFinishSearch(for requestID: Int) -> Bool {
-        requestID == requestSequence
+    @MainActor
+    func finishSearchIfCurrent(requestID: Int) async {
+        guard activeSearchRequestID == requestID else {
+            return
+        }
+
+        activeSearchTask = nil
+        activeSearchRequestID = nil
+        state.isSearching = false
     }
 
+    @MainActor
+    func cancelActiveSearch(resetSearchState: Bool) {
+        activeSearchTask?.cancel()
+        activeSearchTask = nil
+        activeSearchRequestID = nil
+        if resetSearchState {
+            state.isSearching = false
+        }
+    }
+
+    @MainActor
+    func applySearchResults(
+        _ results: [SearchLocation],
+        fallbackQuery: String,
+        requestID: Int
+    ) async {
+        guard shouldApplyResult(for: requestID) else {
+            return
+        }
+
+        let resolvedLocation = results.first?.name ?? fallbackQuery
+        state.selectedLocation = resolvedLocation
+        state.searchQuery = resolvedLocation
+        await refreshWeather(for: requestID)
+    }
+
+    @MainActor
+    func applySearchFailure(_ error: Error, requestID: Int) async {
+        guard shouldApplyResult(for: requestID) else {
+            return
+        }
+        state.searchErrorMessage = error.localizedDescription
+    }
+
+    @MainActor
     func refreshWeather(for requestID: Int) async {
         let selectedLocation = state.selectedLocation
+        let currentWeatherViewModel = currentWeatherViewModel
+        let forecastProvider = forecastProvider
+        let requestedForecastDays = forecastDays
         state.currentWeatherState = .loading
         state.forecastState = .loading
 
-        async let weatherState = loadCurrentWeatherState(for: selectedLocation)
-        async let forecastState = loadForecastState(for: selectedLocation)
+        async let weatherState = currentWeatherViewModel.fetchCurrentWeatherState(for: selectedLocation)
+        async let forecastState = Self.loadForecastState(
+            using: forecastProvider,
+            location: selectedLocation,
+            days: requestedForecastDays
+        )
 
         let resolvedWeatherState = await weatherState
         let resolvedForecastState = await forecastState
@@ -135,13 +195,13 @@ private extension LiveWeatherHomeScreenViewModel {
         state.forecastState = resolvedForecastState
     }
 
-    func loadCurrentWeatherState(for location: String) async -> CurrentWeatherScreenState {
-        await currentWeatherViewModel.fetchCurrentWeatherState(for: location)
-    }
-
-    func loadForecastState(for location: String) async -> WeatherHomeForecastState {
+    static func loadForecastState(
+        using forecastProvider: any ForecastFeatureProviding,
+        location: String,
+        days: Int
+    ) async -> WeatherHomeForecastState {
         do {
-            let forecastDays = try await forecastProvider.fetchForecast(location: location, days: forecastDays)
+            let forecastDays = try await forecastProvider.fetchForecast(location: location, days: days)
             return .loaded(forecastDays)
         } catch {
             return .failed(error.localizedDescription)
