@@ -29,6 +29,10 @@ final class WeatherRemoteDataSourceTests: XCTestCase {
         let location = Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
         let dto = try await datasource.fetchWeather(for: location)
         XCTAssertEqual(dto.current.tempC, 28.5)
+        let requestedURLValue = await client.requestedURL
+        let requestedURL = try XCTUnwrap(requestedURLValue)
+        let components = try XCTUnwrap(URLComponents(url: requestedURL, resolvingAgainstBaseURL: false))
+        XCTAssertEqual(components.queryItems?.first(where: { $0.name == "q" })?.value, "Pune")
     }
 
     func testDataSourceFailure() async throws {

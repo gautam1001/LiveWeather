@@ -34,7 +34,11 @@ private extension LiveForecastFeatureProvider {
     static func liveService(weatherAPIKey: String, weatherAPIURL: String) -> LiveForecastFeatureService {
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: weatherAPIKey, apiUrl: weatherAPIURL)
         let client = URLSessionHTTPClient(session: URLSession.shared)
-        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        let remoteDataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        let dataSource = CachedWeatherRemoteDataSource(
+            remoteDataSource: remoteDataSource,
+            cachePolicy: .live
+        )
         return LiveForecastFeatureService(dataSource: dataSource)
     }
 }

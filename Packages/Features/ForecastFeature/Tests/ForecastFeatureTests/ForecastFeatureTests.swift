@@ -28,6 +28,20 @@ final class ForecastFeatureTests: XCTestCase {
         XCTAssertEqual(result.count, 5)
     }
 
+    func testFetchForecastFormatsDateLabelsUsingSharedFormatter() async throws {
+        let dataSource = MockWeatherRemoteDataSource(
+            forecastDTO: makeForecastDTO(
+                dates: ["2026-04-01", "2026-04-02"],
+                baseTemperature: 30
+            )
+        )
+        let provider = LiveForecastFeatureProvider(service: LiveForecastFeatureService(dataSource: dataSource))
+
+        let result = try await provider.fetchForecast(location: "New Delhi", days: 2)
+
+        XCTAssertEqual(result.map(\.dateLabel), ["Wed, 1 Apr", "Thu, 2 Apr"])
+    }
+
     func testFetchForecastThrowsErrorForInvalidInput() async {
         let dataSource = MockWeatherRemoteDataSource(
             forecastDTO: makeForecastDTO(days: 5, baseTemperature: 30)
@@ -79,9 +93,23 @@ private func XCTAssertThrowsErrorAsync(
 }
 
 private func makeForecastDTO(days: Int, baseTemperature: Double) -> ForecastResponseDTO {
+    guard days > 0 else {
+        return makeForecastDTO(dates: [], baseTemperature: baseTemperature)
+    }
+
+    return makeForecastDTO(
+        dates: (1 ... days).map { day in
+            "2026-04-\(String(format: "%02d", day))"
+        },
+        baseTemperature: baseTemperature
+    )
+}
+
+private func makeForecastDTO(dates: [String], baseTemperature: Double) -> ForecastResponseDTO {
     var forecastDays: [ForecastDayDTO] = []
-    if days > 0 {
-        for day in 1 ... days {
+    if !dates.isEmpty {
+        for (index, date) in dates.enumerated() {
+            let day = index + 1
             let dayDTO = DayDTO(
                 avgTempC: baseTemperature + Double(day),
                 minTempC: baseTemperature + Double(day) - 2,
@@ -90,7 +118,7 @@ private func makeForecastDTO(days: Int, baseTemperature: Double) -> ForecastResp
             )
             forecastDays.append(
                 ForecastDayDTO(
-                    date: "2026-04-\(String(format: "%02d", day))",
+                    date: date,
                     day: dayDTO
                 )
             )
