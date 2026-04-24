@@ -6,7 +6,9 @@ import SearchFeatureAPI
 import WeatherHomeFeatureAPI
 
 public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling {
-    @MainActor @Published public private(set) var state: WeatherHomeScreenState
+    @MainActor public let searchSectionModel: WeatherHomeSearchSectionModel
+    @MainActor public let currentWeatherSectionModel: WeatherHomeCurrentWeatherSectionModel
+    @MainActor public let forecastSectionModel: WeatherHomeForecastSectionModel
 
     private let currentWeatherViewModel: any WeatherHomeCurrentWeatherFeature
     private let forecastProvider: any ForecastFeatureProviding
@@ -29,9 +31,22 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
         self.forecastProvider = forecastProvider
         self.searchProvider = searchProvider
         self.forecastDays = max(1, forecastDays)
-        state = WeatherHomeScreenState(
-            selectedLocation: initialLocation,
-            searchQuery: initialLocation
+        searchSectionModel = WeatherHomeSearchSectionModel(query: initialLocation)
+        currentWeatherSectionModel = WeatherHomeCurrentWeatherSectionModel(
+            selectedLocation: initialLocation
+        )
+        forecastSectionModel = WeatherHomeForecastSectionModel()
+    }
+
+    @MainActor
+    public var state: WeatherHomeScreenState {
+        WeatherHomeScreenState(
+            selectedLocation: currentWeatherSectionModel.selectedLocation,
+            searchQuery: searchSectionModel.query,
+            isSearching: searchSectionModel.isSearching,
+            searchErrorMessage: searchSectionModel.errorMessage,
+            currentWeatherState: currentWeatherSectionModel.state,
+            forecastState: forecastSectionModel.state
         )
     }
 
@@ -47,22 +62,22 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
 
     @MainActor
     public func updateSearchQuery(_ query: String) {
-        state.searchQuery = query
+        searchSectionModel.query = query
     }
 
     @MainActor
     public func performSearch() {
-        let trimmedQuery = state.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedQuery = searchSectionModel.query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedQuery.isEmpty else {
-            state.searchErrorMessage = nil
+            searchSectionModel.errorMessage = nil
             return
         }
 
         cancelActiveSearch(resetSearchState: false)
         let requestID = beginRequest()
         activeSearchRequestID = requestID
-        state.isSearching = true
-        state.searchErrorMessage = nil
+        searchSectionModel.isSearching = true
+        searchSectionModel.errorMessage = nil
         let searchProvider = searchProvider
         activeSearchTask = Task { [weak self, searchProvider] in
             do {
@@ -97,9 +112,9 @@ public final class LiveWeatherHomeScreenViewModel: WeatherHomeScreenViewModeling
 
         cancelActiveSearch(resetSearchState: true)
         let requestID = beginRequest()
-        state.selectedLocation = trimmedLocation
-        state.searchQuery = trimmedLocation
-        state.searchErrorMessage = nil
+        currentWeatherSectionModel.selectedLocation = trimmedLocation
+        searchSectionModel.query = trimmedLocation
+        searchSectionModel.errorMessage = nil
         await refreshWeather(for: requestID)
     }
 }
@@ -120,7 +135,7 @@ private extension LiveWeatherHomeScreenViewModel {
         guard let location else {
             return true
         }
-        return state.selectedLocation == location
+        return currentWeatherSectionModel.selectedLocation == location
     }
 
     @MainActor
@@ -131,7 +146,7 @@ private extension LiveWeatherHomeScreenViewModel {
 
         activeSearchTask = nil
         activeSearchRequestID = nil
-        state.isSearching = false
+        searchSectionModel.isSearching = false
     }
 
     @MainActor
@@ -140,7 +155,7 @@ private extension LiveWeatherHomeScreenViewModel {
         activeSearchTask = nil
         activeSearchRequestID = nil
         if resetSearchState {
-            state.isSearching = false
+            searchSectionModel.isSearching = false
         }
     }
 
@@ -155,8 +170,8 @@ private extension LiveWeatherHomeScreenViewModel {
         }
 
         let resolvedLocation = results.first?.name ?? fallbackQuery
-        state.selectedLocation = resolvedLocation
-        state.searchQuery = resolvedLocation
+        currentWeatherSectionModel.selectedLocation = resolvedLocation
+        searchSectionModel.query = resolvedLocation
         await refreshWeather(for: requestID)
     }
 
@@ -165,17 +180,17 @@ private extension LiveWeatherHomeScreenViewModel {
         guard shouldApplyResult(for: requestID) else {
             return
         }
-        state.searchErrorMessage = error.localizedDescription
+        searchSectionModel.errorMessage = error.localizedDescription
     }
 
     @MainActor
     func refreshWeather(for requestID: Int) async {
-        let selectedLocation = state.selectedLocation
+        let selectedLocation = currentWeatherSectionModel.selectedLocation
         let currentWeatherViewModel = currentWeatherViewModel
         let forecastProvider = forecastProvider
         let requestedForecastDays = forecastDays
-        state.currentWeatherState = .loading
-        state.forecastState = .loading
+        currentWeatherSectionModel.state = .loading
+        forecastSectionModel.state = .loading
 
         async let weatherState = currentWeatherViewModel.fetchCurrentWeatherState(for: selectedLocation)
         async let forecastState = Self.loadForecastState(
@@ -191,8 +206,8 @@ private extension LiveWeatherHomeScreenViewModel {
             return
         }
 
-        state.currentWeatherState = resolvedWeatherState
-        state.forecastState = resolvedForecastState
+        currentWeatherSectionModel.state = resolvedWeatherState
+        forecastSectionModel.state = resolvedForecastState
     }
 
     static func loadForecastState(

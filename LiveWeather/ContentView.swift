@@ -51,8 +51,33 @@ struct ContentView<ViewModel: WeatherHomeScreenViewModeling>: View {
 
 private extension ContentView {
     var searchSection: some View {
-        let state = viewModel.state
-        return VStack(alignment: .leading, spacing: 12) {
+        SearchSectionView(
+            model: viewModel.searchSectionModel,
+            onQueryChanged: viewModel.updateSearchQuery,
+            onSearch: triggerSearch
+        )
+    }
+
+    var currentWeatherSection: some View {
+        CurrentWeatherSectionView(model: viewModel.currentWeatherSectionModel)
+    }
+
+    var forecastSection: some View {
+        ForecastSectionView(model: viewModel.forecastSectionModel)
+    }
+
+    func triggerSearch() {
+        viewModel.performSearch()
+    }
+}
+
+private struct SearchSectionView: View {
+    @ObservedObject var model: WeatherHomeSearchSectionModel
+    let onQueryChanged: (String) -> Void
+    let onSearch: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("Search Location")
                 .font(.headline)
 
@@ -60,8 +85,8 @@ private extension ContentView {
                 TextField(
                     "Enter city name",
                     text: Binding(
-                        get: { state.searchQuery },
-                        set: { viewModel.updateSearchQuery($0) }
+                        get: { model.query },
+                        set: { onQueryChanged($0) }
                     )
                 )
                 .textInputAutocapitalization(.words)
@@ -72,13 +97,13 @@ private extension ContentView {
                     in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                 )
                 .onSubmit {
-                    triggerSearch()
+                    onSearch()
                 }
 
                 Button {
-                    triggerSearch()
+                    onSearch()
                 } label: {
-                    if state.isSearching {
+                    if model.isSearching {
                         ProgressView()
                             .tint(.white)
                             .padding(.horizontal, 8)
@@ -88,11 +113,11 @@ private extension ContentView {
                     }
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(state.isSearching)
+                .disabled(model.isSearching)
             }
 
-            if let searchErrorMessage = state.searchErrorMessage {
-                Text(searchErrorMessage)
+            if let errorMessage = model.errorMessage {
+                Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(.red)
             }
@@ -101,11 +126,14 @@ private extension ContentView {
         .padding(20)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
+}
 
-    var currentWeatherSection: some View {
-        let state = viewModel.state
-        return Group {
-            switch state.currentWeatherState {
+private struct CurrentWeatherSectionView: View {
+    @ObservedObject var model: WeatherHomeCurrentWeatherSectionModel
+
+    var body: some View {
+        Group {
+            switch model.state {
             case .idle, .loading:
                 VStack(spacing: 8) {
                     ProgressView()
@@ -118,7 +146,7 @@ private extension ContentView {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             case let .failed(message):
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(state.selectedLocation)
+                    Text(model.selectedLocation)
                         .font(.title2.weight(.semibold))
                     Text("Current weather unavailable")
                         .font(.headline)
@@ -131,7 +159,7 @@ private extension ContentView {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             case let .loaded(current):
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(state.selectedLocation)
+                    Text(model.selectedLocation)
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.secondary)
 
@@ -142,7 +170,7 @@ private extension ContentView {
                             .font(.title3.weight(.semibold))
                             .padding(.bottom, 10)
                         Spacer()
-                        Image(systemName: symbolName(for: current.conditionSummary))
+                        Image(systemName: SymbolNameResolver.symbolName(for: current.conditionSummary))
                             .font(.system(size: 34))
                             .foregroundStyle(.orange)
                     }
@@ -156,14 +184,17 @@ private extension ContentView {
             }
         }
     }
+}
 
-    var forecastSection: some View {
-        let state = viewModel.state
-        return VStack(alignment: .leading, spacing: 12) {
+private struct ForecastSectionView: View {
+    @ObservedObject var model: WeatherHomeForecastSectionModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
             Text("5-Day Forecast")
                 .font(.headline)
 
-            switch state.forecastState {
+            switch model.state {
             case .idle, .loading:
                 HStack(spacing: 8) {
                     ProgressView()
@@ -180,7 +211,7 @@ private extension ContentView {
                 ForEach(Array(days.enumerated()), id: \.offset) { indexedDay in
                     let day = indexedDay.element
                     HStack {
-                        Image(systemName: symbolName(for: day.summary))
+                        Image(systemName: SymbolNameResolver.symbolName(for: day.summary))
                             .frame(width: 24)
                             .foregroundStyle(.orange)
                         Text(day.dateLabel)
@@ -204,12 +235,10 @@ private extension ContentView {
         .padding(20)
         .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
+}
 
-    func triggerSearch() {
-        viewModel.performSearch()
-    }
-
-    func symbolName(for summary: String) -> String {
+private enum SymbolNameResolver {
+    static func symbolName(for summary: String) -> String {
         let lower = summary.lowercased()
         if lower.contains("sun") {
             return "sun.max.fill"
