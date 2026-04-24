@@ -10,6 +10,7 @@ platform :ios do
     scan(
       project: PROJECT_PATH,
       scheme: "LiveWeather",
+      only_testing: ["LiveWeatherTests"],
       device: "iPhone 17 Pro",
       clean: true,
       xcargs: "-enableCodeCoverage YES",
