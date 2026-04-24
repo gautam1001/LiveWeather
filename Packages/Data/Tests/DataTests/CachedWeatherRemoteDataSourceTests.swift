@@ -99,6 +99,35 @@ final class CachedWeatherRemoteDataSourceTests: XCTestCase {
         XCTAssertEqual(callCount, 1)
     }
 
+    func testFetchWeatherReturnsCachedValueForNormalizedLocationName() async throws {
+        let remoteDataSource = WeatherRemoteDataSourceSpy(
+            currentWeatherResponses: [
+                makeCurrentWeatherDTO(temperatureC: 28.5),
+                makeCurrentWeatherDTO(temperatureC: 31.0),
+            ]
+        )
+        let dataSource = CachedWeatherRemoteDataSource(
+            remoteDataSource: remoteDataSource,
+            cachePolicy: WeatherCachePolicy(currentWeatherTTL: 300, forecastTTL: 900)
+        )
+        let firstLocation = Location(
+            name: " Pune ",
+            coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567)
+        )
+        let secondLocation = Location(
+            name: "pune",
+            coordinate: Coordinate(latitude: 0, longitude: 0)
+        )
+
+        let firstResponse = try await dataSource.fetchWeather(for: firstLocation)
+        let secondResponse = try await dataSource.fetchWeather(for: secondLocation)
+
+        XCTAssertEqual(firstResponse.current.tempC, 28.5)
+        XCTAssertEqual(secondResponse.current.tempC, 28.5)
+        let callCount = await remoteDataSource.currentWeatherCallCount()
+        XCTAssertEqual(callCount, 1)
+    }
+
     private func makeLocation() -> Location {
         Location(name: "Pune", coordinate: Coordinate(latitude: 18.5204, longitude: 73.8567))
     }

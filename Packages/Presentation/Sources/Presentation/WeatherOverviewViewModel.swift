@@ -6,6 +6,7 @@ public final class WeatherOverviewViewModel: ObservableObject, @unchecked Sendab
     @Published public private(set) var state: State = .idle
 
     private let useCase: CurrentWeatherUsecase
+    private let unspecifiedCoordinate = Coordinate(latitude: 0, longitude: 0)
 
     public init(usecase: CurrentWeatherUsecase) {
         useCase = usecase
@@ -18,7 +19,7 @@ public final class WeatherOverviewViewModel: ObservableObject, @unchecked Sendab
 
         let requestedLocation = Location(
             name: location,
-            coordinate: Coordinate(latitude: 28.644800, longitude: 77.216721)
+            coordinate: unspecifiedCoordinate
         )
         let useCase = useCase
 

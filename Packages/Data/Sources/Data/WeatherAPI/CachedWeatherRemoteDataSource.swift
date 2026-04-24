@@ -37,7 +37,7 @@ public actor CachedWeatherRemoteDataSource: WeatherRemoteDataSource {
     }
 
     public func fetchWeather(for location: Location) async throws -> CurrentWeatherResponseDTO {
-        let key = CurrentWeatherCacheKey(coordinate: location.coordinate)
+        let key = CurrentWeatherCacheKey(queryValue: makeCurrentWeatherQueryValue(for: location))
 
         if let cachedResponse = cachedCurrentWeather(for: key) {
             return cachedResponse
@@ -126,6 +126,15 @@ public actor CachedWeatherRemoteDataSource: WeatherRemoteDataSource {
         dateProvider().addingTimeInterval(ttl)
     }
 
+    private func makeCurrentWeatherQueryValue(for location: Location) -> String {
+        let trimmedName = location.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            return "\(location.coordinate.latitude),\(location.coordinate.longitude)"
+        }
+
+        return trimmedName.lowercased()
+    }
+
     private func normalize(locationQuery: String) -> String {
         locationQuery
             .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -139,7 +148,7 @@ private struct CacheEntry<Value: Sendable>: Sendable {
 }
 
 private struct CurrentWeatherCacheKey: Hashable, Sendable {
-    let coordinate: Coordinate
+    let queryValue: String
 }
 
 private struct ForecastCacheKey: Hashable, Sendable {
