@@ -165,18 +165,76 @@ final class WeatherHomeFeatureTests: XCTestCase {
         let call = await forecastSpy.lastCall()
         XCTAssertEqual(call?.location, "Mumbai")
     }
+
+    func testLatestSelectionWinsWhenRefreshesOverlap() async {
+        let currentWeatherSpy = CurrentWeatherFeatureSpy(
+            stateByLocation: [
+                "Pune": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Rain", temperatureC: 24)
+                ),
+                "Mumbai": .loaded(
+                    CurrentWeatherDisplay(conditionSummary: "Sunny", temperatureC: 31)
+                ),
+            ],
+            delayByLocation: ["Pune": 200_000_000]
+        )
+        let forecastSpy = ForecastProviderSpy(
+            stubbedDays: [],
+            stubbedDaysByLocation: [
+                "Pune": [ForecastDay(dateLabel: "Tue, 15 Apr", temperatureC: 24, summary: "Rain")],
+                "Mumbai": [ForecastDay(dateLabel: "Tue, 15 Apr", temperatureC: 31, summary: "Sunny")],
+            ],
+            delayByLocation: ["Pune": 200_000_000]
+        )
+        let searchSpy = SearchProviderSpy(stubbedResults: [])
+        let viewModel = LiveWeatherHomeScreenViewModel(
+            currentWeatherViewModel: currentWeatherSpy,
+            forecastProvider: forecastSpy,
+            searchProvider: searchSpy
+        )
+
+        let firstSelection = Task {
+            await viewModel.selectLocation("Pune")
+        }
+        await Task.yield()
+        let secondSelection = Task {
+            await viewModel.selectLocation("Mumbai")
+        }
+
+        await firstSelection.value
+        await secondSelection.value
+
+        XCTAssertEqual(viewModel.state.selectedLocation, "Mumbai")
+        XCTAssertEqual(
+            viewModel.state.currentWeatherState,
+            .loaded(CurrentWeatherDisplay(conditionSummary: "Sunny", temperatureC: 31))
+        )
+        if case let .loaded(days) = viewModel.state.forecastState {
+            XCTAssertEqual(days.first?.summary, "Sunny")
+        } else {
+            XCTFail("Expected forecast loaded state")
+        }
+    }
 }
 
 private actor CurrentWeatherFeatureSpy: WeatherHomeCurrentWeatherFeature {
     private let stateByLocation: [String: CurrentWeatherScreenState]
+    private let delayByLocation: [String: UInt64]
     private var loadedLocationsStore: [String] = []
 
-    init(stateByLocation: [String: CurrentWeatherScreenState]) {
+    init(
+        stateByLocation: [String: CurrentWeatherScreenState],
+        delayByLocation: [String: UInt64] = [:]
+    ) {
         self.stateByLocation = stateByLocation
+        self.delayByLocation = delayByLocation
     }
 
     func fetchCurrentWeatherState(for location: String) async -> CurrentWeatherScreenState {
         loadedLocationsStore.append(location)
+        if let delay = delayByLocation[location] {
+            try? await Task.sleep(nanoseconds: delay)
+        }
         if let next = stateByLocation[location] {
             return next
         }
@@ -222,20 +280,32 @@ private actor ForecastProviderSpy: ForecastFeatureProviding {
     }
 
     private let stubbedDays: [ForecastDay]
+    private let stubbedDaysByLocation: [String: [ForecastDay]]
     private let stubbedError: Error?
+    private let delayByLocation: [String: UInt64]
     private var calls: [Call] = []
 
-    init(stubbedDays: [ForecastDay], stubbedError: Error? = nil) {
+    init(
+        stubbedDays: [ForecastDay],
+        stubbedDaysByLocation: [String: [ForecastDay]] = [:],
+        stubbedError: Error? = nil,
+        delayByLocation: [String: UInt64] = [:]
+    ) {
         self.stubbedDays = stubbedDays
+        self.stubbedDaysByLocation = stubbedDaysByLocation
         self.stubbedError = stubbedError
+        self.delayByLocation = delayByLocation
     }
 
     func fetchForecast(location: String, days: Int) async throws -> [ForecastDay] {
         calls.append(Call(location: location, days: days))
+        if let delay = delayByLocation[location] {
+            try? await Task.sleep(nanoseconds: delay)
+        }
         if let stubbedError {
             throw stubbedError
         }
-        return stubbedDays
+        return stubbedDaysByLocation[location] ?? stubbedDays
     }
 
     func lastCall() -> Call? {
