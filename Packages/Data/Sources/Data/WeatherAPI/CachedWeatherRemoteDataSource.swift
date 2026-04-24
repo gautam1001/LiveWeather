@@ -142,16 +142,16 @@ public actor CachedWeatherRemoteDataSource: WeatherRemoteDataSource {
     }
 }
 
-private struct CacheEntry<Value: Sendable>: Sendable {
+private struct CacheEntry<Value: Sendable> {
     let value: Value
     let expirationDate: Date
 }
 
-private struct CurrentWeatherCacheKey: Hashable, Sendable {
+private struct CurrentWeatherCacheKey: Hashable {
     let queryValue: String
 }
 
-private struct ForecastCacheKey: Hashable, Sendable {
+private struct ForecastCacheKey: Hashable {
     let locationQuery: String
     let days: Int
 }

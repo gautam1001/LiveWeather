@@ -5,7 +5,7 @@ import XCTest
 
 final class CachedWeatherRemoteDataSourceTests: XCTestCase {
     func testFetchWeatherReturnsCachedValueWithinTTL() async throws {
-        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1_000))
+        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1000))
         let remoteDataSource = WeatherRemoteDataSourceSpy(
             currentWeatherResponses: [
                 makeCurrentWeatherDTO(temperatureC: 28.5),
@@ -30,7 +30,7 @@ final class CachedWeatherRemoteDataSourceTests: XCTestCase {
     }
 
     func testFetchWeatherRefetchesWhenCacheExpires() async throws {
-        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1_000))
+        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1000))
         let remoteDataSource = WeatherRemoteDataSourceSpy(
             currentWeatherResponses: [
                 makeCurrentWeatherDTO(temperatureC: 28.5),
@@ -55,7 +55,7 @@ final class CachedWeatherRemoteDataSourceTests: XCTestCase {
     }
 
     func testFetchForecastReturnsCachedValueForNormalizedLocationAndDays() async throws {
-        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1_000))
+        let dateProvider = TestDateProvider(currentDate: Date(timeIntervalSince1970: 1000))
         let remoteDataSource = WeatherRemoteDataSourceSpy(
             forecastResponses: [
                 makeForecastDTO(temperatures: [24.0]),
