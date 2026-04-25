@@ -27,33 +27,53 @@ public struct LiveForecastFeatureService: Sendable {
             throw WeatherAPIError.emptyPayload
         }
 
-        return forecastDays.map { day in
-            ForecastDay(
-                dateLabel: makeDateLabel(from: day.date),
-                temperatureC: makeTemperature(from: day.day),
-                summary: day.day.condition.text
+        var resolvedForecast: [ForecastDay] = []
+        resolvedForecast.reserveCapacity(forecastDays.count)
+
+        for day in forecastDays {
+            let dateLabel = await ForecastDateLabelFormatter.shared.label(from: day.date)
+            resolvedForecast.append(
+                ForecastDay(
+                    dateLabel: dateLabel,
+                    temperatureC: makeTemperature(from: day.day),
+                    summary: day.day.condition.text
+                )
             )
         }
+
+        return resolvedForecast
     }
 
     private func makeTemperature(from day: DayDTO) -> Double {
         day.avgTempC
     }
+}
 
-    private func makeDateLabel(from apiDate: String) -> String {
+private actor ForecastDateLabelFormatter {
+    static let shared = ForecastDateLabelFormatter()
+
+    private let parser: DateFormatter
+    private let formatter: DateFormatter
+
+    init() {
         let parser = DateFormatter()
         parser.calendar = Calendar(identifier: .gregorian)
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.dateFormat = "yyyy-MM-dd"
-
-        guard let date = parser.date(from: apiDate) else {
-            return apiDate
-        }
+        self.parser = parser
 
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "EEE, d MMM"
+        self.formatter = formatter
+    }
+
+    func label(from apiDate: String) -> String {
+        guard let date = parser.date(from: apiDate) else {
+            return apiDate
+        }
+
         return formatter.string(from: date)
     }
 }

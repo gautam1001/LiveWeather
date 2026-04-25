@@ -23,7 +23,7 @@ public struct WeatherAPIRemoteDataSource: WeatherRemoteDataSource {
     }
 
     public func fetchWeather(for location: Location) async throws -> CurrentWeatherResponseDTO {
-        let url = try buildCurrentWeatherURL(for: location.coordinate)
+        let url = try buildCurrentWeatherURL(for: location)
         return try await performRequest(url: url, as: CurrentWeatherResponseDTO.self)
     }
 
@@ -44,12 +44,19 @@ public struct WeatherAPIRemoteDataSource: WeatherRemoteDataSource {
         }
     }
 
-    private func buildCurrentWeatherURL(for coordinate: Coordinate) throws -> URL {
+    private func buildCurrentWeatherURL(for location: Location) throws -> URL {
+        let trimmedName = location.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        let queryValue = trimmedName.isEmpty
+            ? "\(location.coordinate.latitude),\(location.coordinate.longitude)"
+            : trimmedName
+        return try buildCurrentWeatherURL(queryValue: queryValue)
+    }
+
+    private func buildCurrentWeatherURL(queryValue: String) throws -> URL {
         guard var components = URLComponents(url: config.baseURL, resolvingAgainstBaseURL: false) else {
             throw WeatherAPIError.invalidURL
         }
 
-        let queryValue = "\(coordinate.latitude),\(coordinate.longitude)"
         components.queryItems = makeQueryItems(queryValue: queryValue, days: config.days)
 
         guard let url = components.url else {

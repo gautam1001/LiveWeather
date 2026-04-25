@@ -32,7 +32,11 @@ public final class LiveCurrentWeatherFeatureProvider {
     private static func liveRepositoryFactory(apiKey: String, apiURL: String) -> WeatherRepository {
         let config = WeatherAPIConfig.weatherAPIDefault(apiKey: apiKey, apiUrl: apiURL)
         let client = URLSessionHTTPClient(session: URLSession.shared)
-        let dataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        let remoteDataSource = WeatherAPIRemoteDataSource(client: client, config: config)
+        let dataSource = CachedWeatherRemoteDataSource(
+            remoteDataSource: remoteDataSource,
+            cachePolicy: .live
+        )
         return WeatherRemoteRepository(dataSource: dataSource)
     }
 }
