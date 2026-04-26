@@ -1,10 +1,3 @@
-//
-//  AppContainer.swift
-//  LiveWeather
-//
-//  Created by Prashant Gautam on 21/03/26.
-//
-
 import CurrentWeatherFeatureAPI
 import CurrentWeatherFeatureImpl
 import ForecastFeatureAPI
@@ -15,13 +8,13 @@ import SearchFeatureImpl
 import WeatherHomeFeatureAPI
 import WeatherHomeFeatureImpl
 
-final class AppContainer {
-    typealias CurrentWeatherViewModelFactoryBuilder =
+public final class AppContainer {
+    public typealias CurrentWeatherViewModelFactoryBuilder =
         (_ apiKey: String, _ apiURL: String) -> CurrentWeatherViewModelFactory
-    typealias ForecastFeatureBuilder =
+    public typealias ForecastFeatureBuilder =
         (_ apiKey: String, _ apiURL: String) -> any ForecastFeatureProviding
-    typealias SearchFeatureBuilder = () -> any SearchFeatureProviding
-    typealias WeatherHomeFeatureBuilder =
+    public typealias SearchFeatureBuilder = () -> any SearchFeatureProviding
+    public typealias WeatherHomeFeatureBuilder =
         @MainActor (
             _ currentWeatherViewModelFactory: @escaping CurrentWeatherViewModelFactory,
             _ forecastProvider: any ForecastFeatureProviding,
@@ -31,56 +24,32 @@ final class AppContainer {
     private let weatherViewModelFactory: CurrentWeatherViewModelFactory
     private let weatherHomeViewModelFactory: @MainActor () -> LiveWeatherHomeScreenViewModel
 
-    convenience init(
-        currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
-            CurrentWeatherFeatureFactory.liveViewModelFactory,
-        forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
-        searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live,
-        weatherHomeFeatureBuilder: @escaping WeatherHomeFeatureBuilder =
-            AppContainer.defaultWeatherHomeFeatureBuilder
-    ) {
-        self.init(
-            weatherAPIKey: AppConfig.weatherAPIKey,
-            weatherAPIURL: AppConfig.weatherAPIUrl,
-            currentWeatherFeatureBuilder: currentWeatherFeatureBuilder,
-            forecastFeatureBuilder: forecastFeatureBuilder,
-            searchFeatureBuilder: searchFeatureBuilder,
-            weatherHomeFeatureBuilder: weatherHomeFeatureBuilder
-        )
-    }
-
-    init(
+    public init(
         weatherAPIKey: String,
         weatherAPIURL: String,
         currentWeatherFeatureBuilder: @escaping CurrentWeatherViewModelFactoryBuilder =
             CurrentWeatherFeatureFactory.liveViewModelFactory,
         forecastFeatureBuilder: @escaping ForecastFeatureBuilder = ForecastFeatureFactory.live,
         searchFeatureBuilder: @escaping SearchFeatureBuilder = SearchFeatureFactory.live,
-        weatherHomeFeatureBuilder: @escaping WeatherHomeFeatureBuilder =
-            AppContainer.defaultWeatherHomeFeatureBuilder
+        weatherHomeFeatureBuilder: WeatherHomeFeatureBuilder? = nil
     ) {
-        #if DEV
-            print("DEV")
-        #elseif QA
-            print("QA")
-        #elseif PROD
-            print("PRODUCTION")
-        #endif
+        let resolvedWeatherHomeFeatureBuilder =
+            weatherHomeFeatureBuilder ?? AppContainer.defaultWeatherHomeFeatureBuilder
         let currentWeatherFactory = currentWeatherFeatureBuilder(weatherAPIKey, weatherAPIURL)
         let forecastProvider = forecastFeatureBuilder(weatherAPIKey, weatherAPIURL)
         let searchProvider = searchFeatureBuilder()
         weatherViewModelFactory = currentWeatherFactory
         weatherHomeViewModelFactory = {
-            weatherHomeFeatureBuilder(currentWeatherFactory, forecastProvider, searchProvider)
+            resolvedWeatherHomeFeatureBuilder(currentWeatherFactory, forecastProvider, searchProvider)
         }
     }
 
-    func makeWeatherViewModel() -> CurrentWeatherViewModel {
+    public func makeWeatherViewModel() -> CurrentWeatherViewModel {
         weatherViewModelFactory()
     }
 
     @MainActor
-    func makeWeatherHomeViewModel() -> LiveWeatherHomeScreenViewModel {
+    public func makeWeatherHomeViewModel() -> LiveWeatherHomeScreenViewModel {
         weatherHomeViewModelFactory()
     }
 }

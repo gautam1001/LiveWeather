@@ -5,6 +5,7 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
+import AppComposition
 import CurrentWeatherFeatureAPI
 import CurrentWeatherFeatureImpl
 import ForecastFeatureAPI
@@ -42,13 +43,11 @@ final class LiveWeatherTests: XCTestCase {
 
     @MainActor
     func testAppContainerBuildsFeatureFromInjectedConfigValues() {
-        let provider = CurrentWeatherFeatureFactory.live(
+        let viewModelFactory = CurrentWeatherFeatureFactory.liveViewModelFactory(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
         )
-        let builderSpy = CurrentWeatherFeatureBuilderSpy(viewModelFactory: {
-            provider.makeWeatherViewModel()
-        })
+        let builderSpy = CurrentWeatherFeatureBuilderSpy(viewModelFactory: viewModelFactory)
 
         let container = AppContainer(
             weatherAPIKey: "test-key",
@@ -67,17 +66,14 @@ final class LiveWeatherTests: XCTestCase {
 
     @MainActor
     func testAppContainerCreatesIndependentViewModels() {
-        let provider = CurrentWeatherFeatureFactory.live(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
-        )
         let container = AppContainer(
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
             currentWeatherFeatureBuilder: { _, _ in
-                {
-                    provider.makeWeatherViewModel()
-                }
+                CurrentWeatherFeatureFactory.liveViewModelFactory(
+                    weatherAPIKey: "test-key",
+                    weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+                )
             }
         )
         LiveWeatherTestRetainer.retain(container)
@@ -110,10 +106,6 @@ final class LiveWeatherTests: XCTestCase {
 
     @MainActor
     func testAppContainerBuildsWeatherHomeFeatureFromInjectedDependencies() {
-        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
-        )
         let forecastProviderSpy = ForecastFeatureProviderSpy(stubbedDays: [])
         let searchProviderSpy = SearchFeatureProviderSpy(stubbedResults: [])
         let weatherHomeBuilderSpy = WeatherHomeFeatureBuilderSpy()
@@ -122,9 +114,10 @@ final class LiveWeatherTests: XCTestCase {
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
             currentWeatherFeatureBuilder: { _, _ in
-                {
-                    currentWeatherProvider.makeWeatherViewModel()
-                }
+                CurrentWeatherFeatureFactory.liveViewModelFactory(
+                    weatherAPIKey: "test-key",
+                    weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+                )
             },
             forecastFeatureBuilder: { _, _ in
                 forecastProviderSpy
@@ -150,10 +143,6 @@ final class LiveWeatherTests: XCTestCase {
 
     @MainActor
     func testAppContainerCreatesIndependentWeatherHomeViewModels() {
-        let currentWeatherProvider = CurrentWeatherFeatureFactory.live(
-            weatherAPIKey: "test-key",
-            weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
-        )
         let forecastProviderSpy = ForecastFeatureProviderSpy(stubbedDays: [])
         let searchProviderSpy = SearchFeatureProviderSpy(stubbedResults: [])
 
@@ -161,9 +150,10 @@ final class LiveWeatherTests: XCTestCase {
             weatherAPIKey: "test-key",
             weatherAPIURL: "https://example.com/v1/current.json",
             currentWeatherFeatureBuilder: { _, _ in
-                {
-                    currentWeatherProvider.makeWeatherViewModel()
-                }
+                CurrentWeatherFeatureFactory.liveViewModelFactory(
+                    weatherAPIKey: "test-key",
+                    weatherAPIURL: "https://api.weatherapi.com/v1/current.json"
+                )
             },
             forecastFeatureBuilder: { _, _ in
                 forecastProviderSpy
@@ -195,7 +185,7 @@ private final class CurrentWeatherFeatureBuilderSpy {
     }
 }
 
-private final class CurrentWeatherViewModelFactorySpy {
+private final class CurrentWeatherViewModelFactorySpy: @unchecked Sendable {
     private let backingProvider: any CurrentWeatherFeatureProviding
     private(set) var makeWeatherViewModelCallCount = 0
 
@@ -206,7 +196,6 @@ private final class CurrentWeatherViewModelFactorySpy {
         self.backingProvider = backingProvider
     }
 
-    @MainActor
     func make() -> CurrentWeatherViewModel {
         makeWeatherViewModelCallCount += 1
         return backingProvider.makeWeatherViewModel()

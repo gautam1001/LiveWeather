@@ -19,7 +19,7 @@ public enum CurrentWeatherScreenState: Equatable, Sendable {
     case failed(String)
 }
 
-public typealias CurrentWeatherViewModelFactory = () -> CurrentWeatherViewModel
+public typealias CurrentWeatherViewModelFactory = @Sendable () -> CurrentWeatherViewModel
 
 public extension CurrentWeatherViewModel {
     func loadWeather(for location: String) async {
