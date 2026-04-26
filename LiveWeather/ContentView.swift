@@ -5,6 +5,7 @@
 //  Created by Prashant Gautam on 20/03/26.
 //
 
+import AppComposition
 import CurrentWeatherFeatureAPI
 import ForecastFeatureAPI
 import SwiftUI
@@ -254,6 +255,9 @@ private enum SymbolNameResolver {
 }
 
 #Preview {
-    let previewContainer = AppContainer()
+    let previewContainer = AppContainer(
+        weatherAPIKey: AppConfig.weatherAPIKey,
+        weatherAPIURL: AppConfig.weatherAPIUrl
+    )
     ContentView(viewModel: previewContainer.makeWeatherHomeViewModel())
 }
