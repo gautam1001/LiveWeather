@@ -4,7 +4,7 @@ import Domain
 import Foundation
 import Presentation
 
-public final class LiveCurrentWeatherFeatureProvider {
+public final class LiveCurrentWeatherFeatureProvider: @unchecked Sendable {
     public typealias WeatherRepositoryFactory = (_ apiKey: String, _ apiURL: String) -> WeatherRepository
 
     private let repository: WeatherRepository
@@ -58,7 +58,10 @@ public enum CurrentWeatherFeatureFactory {
         weatherAPIKey: String,
         weatherAPIURL: String
     ) -> CurrentWeatherViewModelFactory {
-        let provider = live(weatherAPIKey: weatherAPIKey, weatherAPIURL: weatherAPIURL)
+        let provider = LiveCurrentWeatherFeatureProvider(
+            weatherAPIKey: weatherAPIKey,
+            weatherAPIURL: weatherAPIURL
+        )
         return {
             provider.makeWeatherViewModel()
         }
