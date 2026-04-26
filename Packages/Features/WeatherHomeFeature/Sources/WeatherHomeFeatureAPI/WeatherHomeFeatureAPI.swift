@@ -1,6 +1,7 @@
 import Combine
 import CurrentWeatherFeatureAPI
 import ForecastFeatureAPI
+import Foundation
 import SearchFeatureAPI
 
 public enum WeatherHomeForecastState: Equatable, Sendable {
@@ -8,6 +9,58 @@ public enum WeatherHomeForecastState: Equatable, Sendable {
     case loading
     case loaded([ForecastDay])
     case failed(String)
+}
+
+public enum WeatherHomeCurrentWeatherViewState: Equatable, Sendable {
+    case idle
+    case loading
+    case failed(message: String)
+    case loaded(WeatherHomeCurrentWeatherViewData)
+}
+
+public struct WeatherHomeCurrentWeatherViewData: Equatable, Sendable {
+    public let locationName: String
+    public let temperatureText: String
+    public let conditionSummary: String
+    public let symbolName: String
+
+    public init(
+        locationName: String,
+        temperatureText: String,
+        conditionSummary: String,
+        symbolName: String
+    ) {
+        self.locationName = locationName
+        self.temperatureText = temperatureText
+        self.conditionSummary = conditionSummary
+        self.symbolName = symbolName
+    }
+}
+
+public enum WeatherHomeForecastViewState: Equatable, Sendable {
+    case idle
+    case loading
+    case failed(message: String)
+    case loaded([WeatherHomeForecastRowViewData])
+}
+
+public struct WeatherHomeForecastRowViewData: Equatable, Sendable, Hashable {
+    public let dateLabel: String
+    public let summary: String
+    public let temperatureText: String
+    public let symbolName: String
+
+    public init(
+        dateLabel: String,
+        summary: String,
+        temperatureText: String,
+        symbolName: String
+    ) {
+        self.dateLabel = dateLabel
+        self.summary = summary
+        self.temperatureText = temperatureText
+        self.symbolName = symbolName
+    }
 }
 
 public struct WeatherHomeScreenState: Equatable, Sendable {
@@ -64,6 +117,26 @@ public final class WeatherHomeCurrentWeatherSectionModel: ObservableObject {
         self.selectedLocation = selectedLocation
         self.state = state
     }
+
+    public var viewState: WeatherHomeCurrentWeatherViewState {
+        switch state {
+        case .idle:
+            .idle
+        case .loading:
+            .loading
+        case let .failed(message):
+            .failed(message: message)
+        case let .loaded(current):
+            .loaded(
+                WeatherHomeCurrentWeatherViewData(
+                    locationName: selectedLocation,
+                    temperatureText: String(format: "%.1f°", current.temperatureC),
+                    conditionSummary: current.conditionSummary,
+                    symbolName: WeatherHomeSymbolNameResolver.symbolName(for: current.conditionSummary)
+                )
+            )
+        }
+    }
 }
 
 @MainActor
@@ -72,6 +145,28 @@ public final class WeatherHomeForecastSectionModel: ObservableObject {
 
     public init(state: WeatherHomeForecastState = .idle) {
         self.state = state
+    }
+
+    public var viewState: WeatherHomeForecastViewState {
+        switch state {
+        case .idle:
+            .idle
+        case .loading:
+            .loading
+        case let .failed(message):
+            .failed(message: message)
+        case let .loaded(days):
+            .loaded(
+                days.map {
+                    WeatherHomeForecastRowViewData(
+                        dateLabel: $0.dateLabel,
+                        summary: $0.summary,
+                        temperatureText: String(format: "%.0f°", $0.temperatureC),
+                        symbolName: WeatherHomeSymbolNameResolver.symbolName(for: $0.summary)
+                    )
+                }
+            )
+        }
     }
 }
 
@@ -105,4 +200,20 @@ public protocol WeatherHomeScreenViewModeling: ObservableObject {
     func cancelSearch()
     @MainActor
     func selectLocation(_ location: String) async
+}
+
+private enum WeatherHomeSymbolNameResolver {
+    static func symbolName(for summary: String) -> String {
+        let lower = summary.lowercased()
+        if lower.contains("sun") {
+            return "sun.max.fill"
+        }
+        if lower.contains("rain") {
+            return "cloud.rain.fill"
+        }
+        if lower.contains("cloud") {
+            return "cloud.fill"
+        }
+        return "cloud.sun.fill"
+    }
 }

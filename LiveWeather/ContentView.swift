@@ -6,8 +6,6 @@
 //
 
 import AppComposition
-import CurrentWeatherFeatureAPI
-import ForecastFeatureAPI
 import SwiftUI
 import WeatherHomeFeatureAPI
 
@@ -134,7 +132,7 @@ private struct CurrentWeatherSectionView: View {
 
     var body: some View {
         Group {
-            switch model.state {
+            switch model.viewState {
             case .idle, .loading:
                 VStack(spacing: 8) {
                     ProgressView()
@@ -160,18 +158,15 @@ private struct CurrentWeatherSectionView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             case let .loaded(current):
                 VStack(alignment: .leading, spacing: 12) {
-                    Text(model.selectedLocation)
+                    Text(current.locationName)
                         .font(.title2.weight(.semibold))
                         .foregroundStyle(.secondary)
 
                     HStack(alignment: .bottom) {
-                        Text("\(current.temperatureC, specifier: "%.1f")°")
+                        Text(current.temperatureText)
                             .font(.system(size: 54, weight: .bold, design: .rounded))
-                        Text("C")
-                            .font(.title3.weight(.semibold))
-                            .padding(.bottom, 10)
                         Spacer()
-                        Image(systemName: SymbolNameResolver.symbolName(for: current.conditionSummary))
+                        Image(systemName: current.symbolName)
                             .font(.system(size: 34))
                             .foregroundStyle(.orange)
                     }
@@ -195,7 +190,7 @@ private struct ForecastSectionView: View {
             Text("5-Day Forecast")
                 .font(.headline)
 
-            switch model.state {
+            switch model.viewState {
             case .idle, .loading:
                 HStack(spacing: 8) {
                     ProgressView()
@@ -212,7 +207,7 @@ private struct ForecastSectionView: View {
                 ForEach(Array(days.enumerated()), id: \.offset) { indexedDay in
                     let day = indexedDay.element
                     HStack {
-                        Image(systemName: SymbolNameResolver.symbolName(for: day.summary))
+                        Image(systemName: day.symbolName)
                             .frame(width: 24)
                             .foregroundStyle(.orange)
                         Text(day.dateLabel)
@@ -221,7 +216,7 @@ private struct ForecastSectionView: View {
                         Text(day.summary)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        Text("\(day.temperatureC, specifier: "%.0f")°")
+                        Text(day.temperatureText)
                             .font(.subheadline.weight(.semibold))
                             .frame(minWidth: 36, alignment: .trailing)
                     }
@@ -235,22 +230,6 @@ private struct ForecastSectionView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(20)
         .background(Color.white.opacity(0.85), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
-    }
-}
-
-private enum SymbolNameResolver {
-    static func symbolName(for summary: String) -> String {
-        let lower = summary.lowercased()
-        if lower.contains("sun") {
-            return "sun.max.fill"
-        }
-        if lower.contains("rain") {
-            return "cloud.rain.fill"
-        }
-        if lower.contains("cloud") {
-            return "cloud.fill"
-        }
-        return "cloud.sun.fill"
     }
 }
 
