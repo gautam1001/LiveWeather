@@ -53,6 +53,9 @@
 - PR flow:
   - Typical flow is `feature/*` -> `Development`, then `Development` -> `main`.
   - Merge only through PR (no direct pushes to protected branches).
+  - Use **squash merge** for short-lived topic branches such as `feature/*`, `bugfix/*`, and `chore/*` when merging into `Development`.
+  - Use a **regular merge commit** for `Development` -> `main`. Do **not** squash this PR, because squash merges rewrite ancestry and can cause the same conflicts to reappear in later release PRs.
+  - After merging `Development` into `main`, sync `main` back into `Development` to keep long-lived branches aligned and reduce repeat conflict resolution.
 - Review readiness:
   - Add clear PR description (what, why, impact, testing done).
   - Ensure CI is green and branch protection rules are satisfied.
